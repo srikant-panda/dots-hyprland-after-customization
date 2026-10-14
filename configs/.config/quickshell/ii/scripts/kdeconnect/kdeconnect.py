@@ -3,6 +3,7 @@ import sys
 import os
 import json
 import time
+import shutil
 import urllib.parse
 import subprocess
 from pathlib import Path
@@ -153,9 +154,43 @@ def ring_phone(dev_id):
 
 def browse_device(dev_id):
     try:
-        subprocess.run(['qdbus6', 'org.kde.kdeconnect', f'/modules/kdeconnect/devices/{dev_id}/sftp', 'org.kde.kdeconnect.device.sftp.startBrowsing'], check=True)
-    except Exception as e:
-        print(f"Error browsing device: {e}", file=sys.stderr)
+        subprocess.run(['qdbus6', 'org.kde.kdeconnect', f'/modules/kdeconnect/devices/{dev_id}/sftp', 'org.kde.kdeconnect.device.sftp.mountAndWait'], timeout=5.0)
+    except Exception:
+        pass
+
+    target_path = None
+    try:
+        dirs_raw = subprocess.check_output(
+            ['qdbus6', 'org.kde.kdeconnect', f'/modules/kdeconnect/devices/{dev_id}/sftp', 'org.kde.kdeconnect.device.sftp.getDirectories'],
+            stderr=subprocess.DEVNULL, timeout=2.0
+        ).decode().strip()
+        for line in dirs_raw.splitlines():
+            if ':' in line:
+                p = line.split(':', 1)[0].strip()
+                if os.path.exists(p):
+                    target_path = p
+                    break
+    except Exception:
+        pass
+
+    if not target_path:
+        try:
+            mp = subprocess.check_output(
+                ['qdbus6', 'org.kde.kdeconnect', f'/modules/kdeconnect/devices/{dev_id}/sftp', 'org.kde.kdeconnect.device.sftp.mountPoint'],
+                stderr=subprocess.DEVNULL, timeout=2.0
+            ).decode().strip()
+            if mp and os.path.exists(mp):
+                target_path = mp
+        except Exception:
+            pass
+
+    if shutil.which('dolphin'):
+        url = target_path if target_path else f"kdeconnect://{dev_id}/"
+        subprocess.Popen(['dolphin', url])
+    elif target_path:
+        subprocess.Popen(['xdg-open', target_path])
+    else:
+        subprocess.Popen(['xdg-open', f"kdeconnect://{dev_id}/"])
 
 def dismiss_notif(dev_id, notif_id):
     try:

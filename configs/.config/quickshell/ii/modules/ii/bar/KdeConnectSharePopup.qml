@@ -366,7 +366,7 @@ PopupWindow {
 
                                 onPressed: {
                                     if (shareItem.modelData?.path) {
-                                        Quickshell.execDetached(["bash", "-c", `xdg-open "$(dirname "${shareItem.modelData.path}")"`]);
+                                        Quickshell.execDetached(["bash", "-c", `if which dolphin >/dev/null 2>&1; then dolphin --select "${shareItem.modelData.path}"; else xdg-open "$(dirname "${shareItem.modelData.path}")"; fi`]);
                                     }
                                 }
 
