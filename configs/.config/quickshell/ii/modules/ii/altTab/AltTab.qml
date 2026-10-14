@@ -143,6 +143,18 @@ Scope {
         }
     }
 
+    // Listen to Hyprland submap reset events as an extra automatic commit fallback
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "submap") {
+                if (event.data === "" && altTabScope.open) {
+                    altTabScope.commit();
+                }
+            }
+        }
+    }
+
     IpcHandler {
         target: "altTab"
 
@@ -203,7 +215,7 @@ Scope {
 
             WlrLayershell.namespace: "quickshell:altTab"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             color: "transparent"
 
             anchors {
@@ -211,6 +223,44 @@ Scope {
                 bottom: true
                 left: true
                 right: true
+            }
+
+            // Keyboard handler for on-demand key capture (including modifier release)
+            Item {
+                id: keyCatch
+                anchors.fill: parent
+                focus: true
+                Component.onCompleted: keyCatch.forceActiveFocus()
+
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Tab) {
+                        if (event.modifiers & Qt.ShiftModifier) {
+                            altTabScope.prev();
+                        } else {
+                            altTabScope.next();
+                        }
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Right) {
+                        altTabScope.next();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Left) {
+                        altTabScope.prev();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        altTabScope.commit();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Escape) {
+                        altTabScope.cancel();
+                        event.accepted = true;
+                    }
+                }
+
+                Keys.onReleased: event => {
+                    if (event.key === Qt.Key_Alt || event.key === Qt.Key_Meta || event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R) {
+                        altTabScope.commit();
+                        event.accepted = true;
+                    }
+                }
             }
 
             // Dim backdrop
@@ -383,7 +433,8 @@ Scope {
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
+                                        onClicked: event => {
+                                            event.accepted = true;
                                             altTabScope.closeWindow(itemCard.modelData);
                                         }
                                     }
