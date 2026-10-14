@@ -84,6 +84,16 @@ bash ~/dots-customizations/apply-customizations.sh
   - **State D (Hotplug while Closed):** Seamlessly enables external monitor as primary at `0x0`.
   - **Fail-safe & Safe:** Exclusive file locking (`/tmp/hypr_lid_monitor.lock`), 400ms event debouncing, zero touch of system power/logind/suspend settings.
 
+### 10. Cross-Workspace Window Cycling (Alt+Tab & Super+Tab)
+- **File:** `~/.config/hypr/custom/keybinds.lua`
+- **Keys:** `ALT + Tab` / `SUPER + Tab` (Forward), `ALT + SHIFT + Tab` / `SUPER + SHIFT + Tab` (Backward)
+- **Features:**
+  - Cycles active focus through all windows across all workspaces and monitors irrespective of workspace boundaries.
+  - Uses native MRU (Most Recently Used) focus history ordering.
+  - Quick Alt+Tab toggles between the two most recently used windows.
+  - Holding and pressing Tab repeatedly cycles through all open windows in sequence.
+  - Microsecond latency directly executed in Hyprland's Lua core.
+
 ---
 
 ## 🗂 Directory Structure
