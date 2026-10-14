@@ -324,6 +324,20 @@ Item { // Bar content region
                 barHovered: barRightSideMouseArea.hovered
             }
 
+            KdeConnectButton {
+                id: kdeConnectButton
+                visible: KdeConnectService.available && root.useShortenedForm < 2
+                Layout.alignment: Qt.AlignVCenter
+                barHovered: barRightSideMouseArea.hovered
+            }
+
+            KdeConnectShareButton {
+                id: kdeConnectShareButton
+                visible: KdeConnectService.available && root.useShortenedForm < 2
+                Layout.alignment: Qt.AlignVCenter
+                barHovered: barRightSideMouseArea.hovered
+            }
+
             SysTray {
                 visible: root.useShortenedForm === 0
                 Layout.fillWidth: false
