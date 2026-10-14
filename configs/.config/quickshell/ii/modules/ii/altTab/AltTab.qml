@@ -50,16 +50,77 @@ Scope {
         return win.initialClass || "Window";
     }
 
+    function wsKey(w) {
+        if (!w || !w.workspace) return 999999;
+        const id = w.workspace.id;
+        if (id >= 1) return id;
+        return 100000 + Math.abs(id);
+    }
+
     function refreshWindows() {
+        altTabScope.focusedScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0];
+
         const allWins = HyprlandData.windowList || [];
         let validWins = allWins.filter(w => {
             return w && w.mapped && !w.hidden && w.workspace && (w.workspace.id >= 1 || (w.workspace.name && w.workspace.name.length > 0));
         });
-        validWins.sort((a, b) => (a.focusHistoryID ?? 999) - (b.focusHistoryID ?? 999));
 
+        if (validWins.length === 0) {
+            altTabScope.windows = [];
+            return [];
+        }
+
+        // Deterministic serial order:
+        // 1. Workspace ID ascending (WS 1 -> WS 2 -> WS 3)
+        // 2. Physical X coordinate ascending (left to right)
+        // 3. Physical Y coordinate ascending (top to bottom)
+        // 4. Address ascending (tie-breaker)
+        validWins.sort((a, b) => {
+            const diffWs = wsKey(a) - wsKey(b);
+            if (diffWs !== 0) return diffWs;
+
+            const diffX = (a.at?.[0] ?? 0) - (b.at?.[0] ?? 0);
+            if (diffX !== 0) return diffX;
+
+            const diffY = (a.at?.[1] ?? 0) - (b.at?.[1] ?? 0);
+            if (diffY !== 0) return diffY;
+
+            return (a.address || "").localeCompare(b.address || "");
+        });
+
+        // Identify currently active window
+        let currentAddr = "";
+        if (ToplevelManager.activeToplevel && ToplevelManager.activeToplevel.HyprlandToplevel) {
+            const raw = ToplevelManager.activeToplevel.HyprlandToplevel.address || "";
+            if (raw) currentAddr = "0x" + raw.toLowerCase().replace(/^0x/, "");
+        }
+        if (!currentAddr) {
+            const fh0 = allWins.find(w => w && w.focusHistoryID === 0);
+            if (fh0 && fh0.address) {
+                currentAddr = fh0.address.toLowerCase();
+            }
+        }
+
+        // Find index of current active window in the sorted serial array
+        let activeIndex = -1;
+        if (currentAddr) {
+            activeIndex = validWins.findIndex(w => (w.address || "").toLowerCase() === currentAddr);
+        }
+        if (activeIndex === -1) {
+            activeIndex = validWins.findIndex(w => w && w.focusHistoryID === 0);
+        }
+
+        // Rotate array so current active window is at index 0 (the starting window)
+        // Serial progression: [Current, NextInSerial1, NextInSerial2, ...]
+        if (activeIndex > 0) {
+            validWins = validWins.slice(activeIndex).concat(validWins.slice(0, activeIndex));
+        }
+
+        // Connect toplevels for ScreencopyView live thumbnails and tag starting window
         const toplevelList = ToplevelManager.toplevels.values;
         for (let i = 0; i < validWins.length; i++) {
             const win = validWins[i];
+            win.isCurrent = (i === 0);
             const addr = (win.address || "").toLowerCase().replace(/^0x/, "");
             win.toplevel = toplevelList.find(t => {
                 if (!t || !t.HyprlandToplevel) return false;
@@ -73,8 +134,8 @@ Scope {
     }
 
     function ensureVisible() {
-        if (switcherLoader.item && switcherLoader.item.listView) {
-            switcherLoader.item.listView.positionViewAtIndex(altTabScope.selectedIndex, ListView.Contain);
+        if (switcherWindow && switcherWindow.listView) {
+            switcherWindow.listView.positionViewAtIndex(altTabScope.selectedIndex, ListView.Contain);
         }
     }
 
@@ -83,6 +144,7 @@ Scope {
             const list = refreshWindows();
             if (list.length === 0) return;
             altTabScope.open = true;
+            // On open, highlight index 1 (the next window in serial order)
             altTabScope.selectedIndex = (list.length > 1) ? 1 : 0;
         } else {
             if (altTabScope.windows.length === 0) return;
@@ -96,7 +158,8 @@ Scope {
             const list = refreshWindows();
             if (list.length === 0) return;
             altTabScope.open = true;
-            altTabScope.selectedIndex = list.length - 1;
+            // On reverse open (Alt+Shift+Tab), highlight previous window (end of serial list)
+            altTabScope.selectedIndex = (list.length > 1) ? (list.length - 1) : 0;
         } else {
             if (altTabScope.windows.length === 0) return;
             altTabScope.selectedIndex = (altTabScope.selectedIndex - 1 + altTabScope.windows.length) % altTabScope.windows.length;
@@ -143,7 +206,7 @@ Scope {
         }
     }
 
-    // Listen to Hyprland submap reset events as an extra automatic commit fallback
+    // Fallback: commit if Hyprland submap resets
     Connections {
         target: Hyprland
         function onRawEvent(event) {
@@ -203,278 +266,295 @@ Scope {
         onReleased: altTabScope.cancel()
     }
 
+    PanelWindow {
+        id: switcherWindow
+        readonly property HyprlandMonitor monitor: Hyprland.monitorFor(switcherWindow.screen)
+        property alias listView: windowListView
 
-    Loader {
-        id: switcherLoader
-        active: altTabScope.open
+        screen: altTabScope.focusedScreen
+        visible: altTabScope.open
 
-        sourceComponent: PanelWindow {
-            id: switcherWindow
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(switcherWindow.screen)
-            property alias listView: windowListView
+        WlrLayershell.namespace: "quickshell:altTab"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        color: "transparent"
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
 
-            screen: altTabScope.focusedScreen
-            visible: altTabScope.open
+        // Dim backdrop
+        Rectangle {
+            anchors.fill: parent
+            color: "#48000000"
 
-            WlrLayershell.namespace: "quickshell:altTab"
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            color: "transparent"
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
-
-
-            // Dim backdrop
-            Rectangle {
+            MouseArea {
                 anchors.fill: parent
-                color: "#48000000"
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: altTabScope.cancel()
-                }
+                onClicked: altTabScope.cancel()
             }
+        }
 
-            // Centered HUD dialog
-            Rectangle {
-                id: hudCard
+        // Centered HUD dialog
+        Rectangle {
+            id: hudCard
+            anchors.centerIn: parent
+            radius: 24
+            color: ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainer, 0.08)
+            border.color: Appearance.m3colors.m3outlineVariant
+            border.width: 1
+
+            implicitWidth: Math.min(Math.max(windowListView.contentWidth + 56, 440), switcherWindow.width - 64)
+            implicitHeight: mainColumn.implicitHeight + 36
+
+            ColumnLayout {
+                id: mainColumn
                 anchors.centerIn: parent
-                radius: 24
-                color: ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainer, 0.08)
-                border.color: Appearance.m3colors.m3outlineVariant
-                border.width: 1
+                spacing: 16
+                width: hudCard.implicitWidth - 36
 
-                implicitWidth: Math.min(Math.max(windowListView.contentWidth + 56, 440), switcherWindow.width - 64)
-                implicitHeight: mainColumn.implicitHeight + 36
+                // Windows Horizontal ListView with direct window previews
+                ListView {
+                    id: windowListView
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredHeight: 188
+                    Layout.preferredWidth: Math.min(contentWidth, hudCard.implicitWidth - 44)
+                    orientation: ListView.Horizontal
+                    spacing: 14
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
 
-                ColumnLayout {
-                    id: mainColumn
-                    anchors.centerIn: parent
-                    spacing: 16
-                    width: hudCard.implicitWidth - 36
+                    model: altTabScope.windows
 
-                    // Windows Horizontal ListView with direct window previews
-                    ListView {
-                        id: windowListView
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredHeight: 188
-                        Layout.preferredWidth: Math.min(contentWidth, hudCard.implicitWidth - 44)
-                        orientation: ListView.Horizontal
-                        spacing: 14
-                        clip: true
-                        boundsBehavior: Flickable.StopAtBounds
+                    delegate: Rectangle {
+                        id: itemCard
+                        required property int index
+                        required property var modelData
 
-                        model: altTabScope.windows
+                        readonly property bool isSelected: index === altTabScope.selectedIndex
+                        readonly property bool isHovered: itemMouseArea.containsMouse
+                        readonly property bool isCurrent: itemCard.index === 0
 
-                        delegate: Rectangle {
-                            id: itemCard
-                            required property int index
-                            required property var modelData
+                        width: 236
+                        height: 184
+                        radius: 16
 
-                            readonly property bool isSelected: index === altTabScope.selectedIndex
-                            readonly property bool isHovered: itemMouseArea.containsMouse
+                        color: isSelected 
+                            ? Appearance.m3colors.m3primaryContainer 
+                            : (isHovered ? Appearance.m3colors.m3surfaceContainerHigh : Appearance.m3colors.m3surfaceContainerLow)
 
-                            width: 236
-                            height: 184
-                            radius: 16
+                        border.color: isSelected 
+                            ? Appearance.m3colors.m3primary 
+                            : (isHovered ? Appearance.m3colors.m3outline : Appearance.m3colors.m3outlineVariant)
+                        border.width: isSelected ? 2.5 : 1
 
-                            color: isSelected 
-                                ? Appearance.m3colors.m3primaryContainer 
-                                : (isHovered ? Appearance.m3colors.m3surfaceContainerHigh : Appearance.m3colors.m3surfaceContainerLow)
+                        Behavior on color {
+                            ColorAnimation { duration: 120 }
+                        }
+                        Behavior on border.color {
+                            ColorAnimation { duration: 120 }
+                        }
 
-                            border.color: isSelected 
-                                ? Appearance.m3colors.m3primary 
-                                : (isHovered ? Appearance.m3colors.m3outline : Appearance.m3colors.m3outlineVariant)
-                            border.width: isSelected ? 2.5 : 1
-
-                            Behavior on color {
-                                ColorAnimation { duration: 120 }
+                        // Card Click to Select
+                        MouseArea {
+                            id: itemMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: {
+                                altTabScope.selectedIndex = itemCard.index;
                             }
-                            Behavior on border.color {
-                                ColorAnimation { duration: 120 }
+                            onClicked: {
+                                altTabScope.selectIndex(itemCard.index);
                             }
+                        }
 
-                            // Card Click to Select
-                            MouseArea {
-                                id: itemMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onEntered: {
-                                    altTabScope.selectedIndex = itemCard.index;
-                                }
-                                onClicked: {
-                                    altTabScope.selectIndex(itemCard.index);
-                                }
+                        // Card Header: App Icon, Name, Starting/Current Badge, Workspace Badge & Close Button
+                        RowLayout {
+                            id: cardHeader
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                right: parent.right
+                                margins: 8
+                                bottomMargin: 4
                             }
+                            height: 26
+                            spacing: 6
 
-                            // Card Header: App Icon, Name, Workspace Badge & Close Button
-                            RowLayout {
-                                id: cardHeader
-                                anchors {
-                                    top: parent.top
-                                    left: parent.left
-                                    right: parent.right
-                                    margins: 8
-                                    bottomMargin: 4
-                                }
-                                height: 26
-                                spacing: 6
-
-                                // Small app icon
-                                IconImage {
-                                    Layout.preferredWidth: 20
-                                    Layout.preferredHeight: 20
-                                    Layout.alignment: Qt.AlignVCenter
-                                    source: Quickshell.iconPath(altTabScope.getAppIcon(itemCard.modelData), "application-x-executable")
-                                }
-
-                                // App Name
-                                Text {
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    text: altTabScope.getAppName(itemCard.modelData)
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    elide: Text.ElideRight
-                                    color: itemCard.isSelected 
-                                        ? Appearance.m3colors.m3onPrimaryContainer 
-                                        : Appearance.m3colors.m3onSurface
-                                }
-
-                                // Workspace Badge Pill
-                                Rectangle {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    radius: 6
-                                    height: 18
-                                    implicitWidth: wsText.implicitWidth + 8
-                                    color: itemCard.isSelected 
-                                        ? Appearance.m3colors.m3primary 
-                                        : Appearance.m3colors.m3surfaceContainerHighest
-
-                                    Text {
-                                        id: wsText
-                                        anchors.centerIn: parent
-                                        text: itemCard.modelData?.workspace?.name ? ("WS " + itemCard.modelData.workspace.name) : ""
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: itemCard.isSelected 
-                                            ? Appearance.m3colors.m3onPrimary 
-                                            : Appearance.m3colors.m3onSurfaceVariant
-                                    }
-                                }
-
-                                // Close Button (X)
-                                Rectangle {
-                                    id: closeBtn
-                                    Layout.alignment: Qt.AlignVCenter
-                                    implicitWidth: 22
-                                    implicitHeight: 22
-                                    radius: 11
-                                    color: closeBtnMouse.containsMouse 
-                                        ? Appearance.m3colors.m3error 
-                                        : ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainerHighest, 0.4)
-
-                                    Behavior on color {
-                                        ColorAnimation { duration: 100 }
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "✕"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: closeBtnMouse.containsMouse 
-                                            ? Appearance.m3colors.m3onError 
-                                            : Appearance.m3colors.m3onSurfaceVariant
-                                    }
-
-                                    MouseArea {
-                                        id: closeBtnMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: event => {
-                                            event.accepted = true;
-                                            altTabScope.closeWindow(itemCard.modelData);
-                                        }
-                                    }
-                                }
+                            // Small app icon
+                            IconImage {
+                                Layout.preferredWidth: 20
+                                Layout.preferredHeight: 20
+                                Layout.alignment: Qt.AlignVCenter
+                                source: Quickshell.iconPath(altTabScope.getAppIcon(itemCard.modelData), "application-x-executable")
                             }
 
-                            // Direct Live Window Preview Body
+                            // App Name
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: altTabScope.getAppName(itemCard.modelData)
+                                font.pixelSize: 12
+                                font.bold: true
+                                elide: Text.ElideRight
+                                color: itemCard.isSelected 
+                                    ? Appearance.m3colors.m3onPrimaryContainer 
+                                    : Appearance.m3colors.m3onSurface
+                            }
+
+                            // Starting Window Badge (Current)
                             Rectangle {
-                                id: previewContainer
-                                anchors {
-                                    top: cardHeader.bottom
-                                    left: parent.left
-                                    right: parent.right
-                                    bottom: parent.bottom
-                                    margins: 8
-                                    topMargin: 2
-                                }
-                                radius: 10
-                                clip: true
-                                color: Appearance.m3colors.m3surfaceContainerLowest
-                                border.color: Appearance.m3colors.m3outlineVariant
-                                border.width: 1
+                                visible: itemCard.isCurrent
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 6
+                                height: 18
+                                implicitWidth: currentBadgeText.implicitWidth + 8
+                                color: itemCard.isSelected 
+                                    ? Appearance.m3colors.m3primary 
+                                    : ColorUtils.transparentize(Appearance.m3colors.m3secondaryContainer, 0.2)
 
-                                ScreencopyView {
-                                    id: livePreview
+                                Text {
+                                    id: currentBadgeText
                                     anchors.centerIn: parent
-                                    captureSource: itemCard.modelData?.toplevel ?? null
-                                    live: true
-                                    paintCursor: false
-                                    constraintSize: Qt.size(216, 134)
+                                    text: "Current"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: itemCard.isSelected 
+                                        ? Appearance.m3colors.m3onPrimary 
+                                        : Appearance.m3colors.m3onSecondaryContainer
+                                }
+                            }
+
+                            // Workspace Badge Pill
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 6
+                                height: 18
+                                implicitWidth: wsText.implicitWidth + 8
+                                color: itemCard.isSelected 
+                                    ? Appearance.m3colors.m3primary 
+                                    : Appearance.m3colors.m3surfaceContainerHighest
+
+                                Text {
+                                    id: wsText
+                                    anchors.centerIn: parent
+                                    text: itemCard.modelData?.workspace?.name ? ("WS " + itemCard.modelData.workspace.name) : ""
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: itemCard.isSelected 
+                                        ? Appearance.m3colors.m3onPrimary 
+                                        : Appearance.m3colors.m3onSurfaceVariant
+                                }
+                            }
+
+                            // Close Button (X)
+                            Rectangle {
+                                id: closeBtn
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: 22
+                                implicitHeight: 22
+                                radius: 11
+                                color: closeBtnMouse.containsMouse 
+                                    ? Appearance.m3colors.m3error 
+                                    : ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainerHighest, 0.4)
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 100 }
                                 }
 
-                                // Fallback icon when screencopy is not yet available
-                                IconImage {
+                                Text {
                                     anchors.centerIn: parent
-                                    width: 52
-                                    height: 52
-                                    visible: !itemCard.modelData?.toplevel
-                                    source: Quickshell.iconPath(altTabScope.getAppIcon(itemCard.modelData), "application-x-executable")
+                                    text: "✕"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: closeBtnMouse.containsMouse 
+                                        ? Appearance.m3colors.m3onError 
+                                        : Appearance.m3colors.m3onSurfaceVariant
                                 }
+
+                                MouseArea {
+                                    id: closeBtnMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: event => {
+                                        event.accepted = true;
+                                        altTabScope.closeWindow(itemCard.modelData);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Direct Live Window Preview Body
+                        Rectangle {
+                            id: previewContainer
+                            anchors {
+                                top: cardHeader.bottom
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: 8
+                                topMargin: 2
+                            }
+                            radius: 10
+                            clip: true
+                            color: Appearance.m3colors.m3surfaceContainerLowest
+                            border.color: Appearance.m3colors.m3outlineVariant
+                            border.width: 1
+
+                            ScreencopyView {
+                                id: livePreview
+                                anchors.centerIn: parent
+                                captureSource: itemCard.modelData?.toplevel ?? null
+                                live: true
+                                paintCursor: false
+                                constraintSize: Qt.size(216, 134)
+                            }
+
+                            // Fallback icon when screencopy is not yet available
+                            IconImage {
+                                anchors.centerIn: parent
+                                width: 52
+                                height: 52
+                                visible: !itemCard.modelData?.toplevel
+                                source: Quickshell.iconPath(altTabScope.getAppIcon(itemCard.modelData), "application-x-executable")
                             }
                         }
                     }
+                }
 
-                    // Selected Window Title & Details Footer
-                    ColumnLayout {
+                // Selected Window Title & Details Footer
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 3
+
+                    Text {
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 3
+                        Layout.maximumWidth: hudCard.implicitWidth - 48
+                        horizontalAlignment: Text.AlignHCenter
+                        text: altTabScope.currentSelectedWindow?.title || ""
+                        font.pixelSize: 13
+                        font.bold: true
+                        elide: Text.ElideMiddle
+                        color: Appearance.m3colors.m3onSurface
+                    }
 
-                        Text {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: hudCard.implicitWidth - 48
-                            horizontalAlignment: Text.AlignHCenter
-                            text: altTabScope.currentSelectedWindow?.title || ""
-                            font.pixelSize: 13
-                            font.bold: true
-                            elide: Text.ElideMiddle
-                            color: Appearance.m3colors.m3onSurface
+                    Text {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: {
+                            const win = altTabScope.currentSelectedWindow;
+                            if (!win) return "";
+                            const ws = win.workspace?.name ? ("Workspace " + win.workspace.name) : "";
+                            const cls = win.class ? win.class : "";
+                            return ws && cls ? (ws + "  •  " + cls) : (ws || cls);
                         }
-
-                        Text {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            text: {
-                                const win = altTabScope.currentSelectedWindow;
-                                if (!win) return "";
-                                const ws = win.workspace?.name ? ("Workspace " + win.workspace.name) : "";
-                                const cls = win.class ? win.class : "";
-                                return ws && cls ? (ws + "  •  " + cls) : (ws || cls);
-                            }
-                            font.pixelSize: 11
-                            color: Appearance.m3colors.m3onSurfaceVariant
-                            opacity: 0.85
-                        }
+                        font.pixelSize: 11
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                        opacity: 0.85
                     }
                 }
             }
