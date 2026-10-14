@@ -6,10 +6,65 @@ import time
 import shutil
 import urllib.parse
 import subprocess
+import re
 from pathlib import Path
 
 STATE_DIR = Path.home() / ".local/state/quickshell/user/generated"
 SHARES_FILE = STATE_DIR / "kdeconnect_shares.json"
+
+def is_ignored_year(val):
+    return val in ['2023', '2024', '2025', '2026', '2027']
+
+def extract_otp(text):
+    if not text:
+        return ''
+    clean = re.sub(r'<[^>]*>', ' ', text)
+    clean = re.sub(r'\s+', ' ', clean).strip()
+
+    # Google G-123456
+    m = re.search(r'\b[Gg]-?([0-9]{4,8})\b', clean)
+    if m:
+        return m.group(1)
+
+    # 123-456 pattern when preceded/followed by otp/code
+    m = re.search(r'\b(?:otp|code|verification|passcode)\b[^\d]{1,20}([0-9]{3})-([0-9]{3})\b', clean, re.IGNORECASE)
+    if m:
+        return m.group(1) + m.group(2)
+
+    # Label before: 'otp is 123456', 'verification code: 123456', 'login code 1234'
+    m = re.search(r'\b(?:otp|one[- ]time[- ]password|passcode|verification\s+code|security\s+code|login\s+code|secret\s+code|auth\s+code|code|pin)\b\s*(?:is\s*)?[:=-]?\s*(?:is\s*)?([0-9]{4,8})\b', clean, re.IGNORECASE)
+    if m and not is_ignored_year(m.group(1)):
+        return m.group(1)
+
+    # Word code: e.g. 'Uber code is 1234'
+    m = re.search(r'\b\w+\s+code\s*(?:is\s*)?[:=-]?\s*(?:is\s*)?([0-9]{4,8})\b', clean, re.IGNORECASE)
+    if m and not is_ignored_year(m.group(1)):
+        return m.group(1)
+
+    # Digits before: '123456 is your OTP / verification code'
+    m = re.search(r'\b([0-9]{4,8})\b\s+is\s+(?:your\s+)?(?:\w+\s+){0,2}(?:otp|code|passcode|pin|verification|password|secret)\b', clean, re.IGNORECASE)
+    if m and not is_ignored_year(m.group(1)):
+        return m.group(1)
+
+    # Action match: 'enter 123456 to verify'
+    m = re.search(r'\b(?:enter|use|input)\s+([0-9]{4,8})\s+(?:to\s+verify|to\s+confirm|for\s+verification|as\s+your|to\s+login)\b', clean, re.IGNORECASE)
+    if m and not is_ignored_year(m.group(1)):
+        return m.group(1)
+
+    # General OTP mention in message, search for standalone 4-8 digit numbers excluding bank account/amounts
+    if re.search(r'\b(?:otp|verification|verify|passcode|two-step|2-step|authentication)\b', clean, re.IGNORECASE):
+        for m in re.finditer(r'\b([0-9]{4,8})\b', clean):
+            val = m.group(1)
+            start = m.start()
+            prefix = clean[max(0, start - 20):start].lower()
+            bad_terms = ['a/c', 'acct', 'account', 'card', 'ending', 'inr', 'rs', 'rs.', '$', 'usd', 'eur']
+            if any(term in prefix for term in bad_terms):
+                continue
+            if is_ignored_year(val):
+                continue
+            return val
+
+    return ''
 
 def ensure_state_dir():
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -107,11 +162,16 @@ def get_status():
                         if ':' in line:
                             k, v = line.split(':', 1)
                             n_props[k.strip()] = v.strip()
+                    n_app = n_props.get('appName', 'App')
+                    n_title = n_props.get('title', '')
+                    n_text = n_props.get('text', '')
+                    n_otp = extract_otp(f"{n_title} {n_text}")
                     notifications.append({
                         'id': nid,
-                        'appName': n_props.get('appName', 'App'),
-                        'title': n_props.get('title', ''),
-                        'text': n_props.get('text', ''),
+                        'appName': n_app,
+                        'title': n_title,
+                        'text': n_text,
+                        'otp': n_otp,
                         'iconPath': n_props.get('iconPath', ''),
                         'dismissable': n_props.get('dismissable', 'true') == 'true'
                     })

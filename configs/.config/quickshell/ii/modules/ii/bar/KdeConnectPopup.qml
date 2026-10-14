@@ -171,7 +171,7 @@ PopupWindow {
                                 Layout.fillWidth: true
                                 text: KdeConnectService.deviceName
                                 font.bold: true
-                                font.pixelSize: Appearance.font.pixelSize.medium
+                                font.pixelSize: Appearance.font.pixelSize.normal
                                 color: Appearance.m3colors.m3onSurface
                                 elide: Text.ElideRight
                             }
@@ -385,6 +385,24 @@ PopupWindow {
                     delegate: Rectangle {
                         id: notifItem
                         required property var modelData
+                        readonly property string otpCode: (notifItem.modelData?.otp) || NotificationUtils.extractOtp((notifItem.modelData?.title || "") + " " + (notifItem.modelData?.text || ""))
+                        property bool copiedOtp: false
+
+                        Timer {
+                            id: resetOtpTimer
+                            interval: 1500
+                            repeat: false
+                            onTriggered: notifItem.copiedOtp = false
+                        }
+
+                        function copyOtp() {
+                            if (!notifItem.otpCode) return;
+                            Quickshell.clipboardText = notifItem.otpCode;
+                            Quickshell.execDetached(["wl-copy", notifItem.otpCode]);
+                            notifItem.copiedOtp = true;
+                            resetOtpTimer.restart();
+                        }
+
                         width: notifList.width
                         implicitHeight: itemRow.implicitHeight + 12
                         radius: 8
@@ -461,6 +479,44 @@ PopupWindow {
                                     wrapMode: Text.Wrap
                                     maximumLineCount: 2
                                     elide: Text.ElideRight
+                                }
+
+                                // OTP Copy Button showing actual OTP
+                                RippleButton {
+                                    id: notifOtpBtn
+                                    visible: notifItem.otpCode.length > 0
+                                    Layout.topMargin: 2
+                                    implicitHeight: 24
+                                    implicitWidth: notifOtpRow.implicitWidth + 16
+                                    buttonRadius: 12
+                                    colBackground: notifItem.copiedOtp ? Appearance.m3colors.m3primaryContainer : Appearance.colors.colLayer2
+                                    colBackgroundHover: notifItem.copiedOtp ? Appearance.m3colors.m3primaryContainer : Appearance.colors.colLayer2Hover
+
+                                    onPressed: notifItem.copyOtp()
+
+                                    contentItem: RowLayout {
+                                        id: notifOtpRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+
+                                        MaterialSymbol {
+                                            text: notifItem.copiedOtp ? "check" : "content_copy"
+                                            iconSize: 13
+                                            color: notifItem.copiedOtp ? Appearance.m3colors.m3primary : Appearance.m3colors.m3onSurface
+                                        }
+
+                                        StyledText {
+                                            text: notifItem.copiedOtp ? "Copied!" : notifItem.otpCode
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            font.family: notifItem.copiedOtp ? Appearance.font.family.main : Appearance.font.family.mono
+                                            color: notifItem.copiedOtp ? Appearance.m3colors.m3primary : Appearance.m3colors.m3onSurface
+                                        }
+                                    }
+
+                                    PopupToolTip {
+                                        text: notifItem.copiedOtp ? "Copied to clipboard" : `Copy OTP (${notifItem.otpCode})`
+                                    }
                                 }
                             }
 
