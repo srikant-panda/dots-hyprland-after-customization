@@ -10,6 +10,16 @@ pcall(function() hl.unbind("SUPER+Tab") end)
 pcall(function() hl.unbind("ALT + Tab") end)
 pcall(function() hl.unbind("ALT+Tab") end)
 
+local function commit_switcher()
+    hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+    hl.dispatch(hl.dsp.submap("reset"))
+end
+
+local function cancel_switcher()
+    hl.dispatch(hl.dsp.global("quickshell:altTabCancel"))
+    hl.dispatch(hl.dsp.submap("reset"))
+end
+
 -- Define switcher submap for visual Alt+Tab / Super+Tab
 hl.define_submap("alttab", function()
     -- Tab / Shift+Tab cycling while holding modifiers
@@ -25,32 +35,32 @@ hl.define_submap("alttab", function()
     hl.bind("Left", hl.dsp.global("quickshell:altTabPrev"), { ignore_mods = true })
 
     -- Enter to commit, Escape to cancel
-    hl.bind("Return", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { ignore_mods = true })
-    hl.bind("Escape", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCancel"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { ignore_mods = true })
+    hl.bind("Return", commit_switcher, { ignore_mods = true })
+    hl.bind("Escape", cancel_switcher, { ignore_mods = true })
 
-    -- Modifier release handlers: commits selection and exits submap
-    hl.bind("Alt_L", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { release = true, ignore_mods = true })
-    hl.bind("Alt_R", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { release = true, ignore_mods = true })
-    hl.bind("SUPER_L", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { release = true, ignore_mods = true })
-    hl.bind("SUPER_R", function()
-        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end, { release = true, ignore_mods = true })
+    -- Modifier release handlers: automatic commit when ALT or SUPER is released
+    -- Check all casing and modifier combinations (ALT/SUPER with or without SHIFT)
+    hl.bind("ALT + Alt_L", commit_switcher, { release = true })
+    hl.bind("ALT + Alt_R", commit_switcher, { release = true })
+    hl.bind("ALT + ALT_L", commit_switcher, { release = true })
+    hl.bind("ALT + ALT_R", commit_switcher, { release = true })
+    hl.bind("ALT + SHIFT + Alt_L", commit_switcher, { release = true })
+    hl.bind("ALT + SHIFT + Alt_R", commit_switcher, { release = true })
+    hl.bind("Alt_L", commit_switcher, { release = true })
+    hl.bind("Alt_R", commit_switcher, { release = true })
+    hl.bind("ALT_L", commit_switcher, { release = true })
+    hl.bind("ALT_R", commit_switcher, { release = true })
+
+    hl.bind("SUPER + Super_L", commit_switcher, { release = true })
+    hl.bind("SUPER + Super_R", commit_switcher, { release = true })
+    hl.bind("SUPER + SUPER_L", commit_switcher, { release = true })
+    hl.bind("SUPER + SUPER_R", commit_switcher, { release = true })
+    hl.bind("SUPER + SHIFT + Super_L", commit_switcher, { release = true })
+    hl.bind("SUPER + SHIFT + Super_R", commit_switcher, { release = true })
+    hl.bind("Super_L", commit_switcher, { release = true })
+    hl.bind("Super_R", commit_switcher, { release = true })
+    hl.bind("SUPER_L", commit_switcher, { release = true })
+    hl.bind("SUPER_R", commit_switcher, { release = true })
 end)
 
 -- Entry keybinds to open switcher and enter submap
