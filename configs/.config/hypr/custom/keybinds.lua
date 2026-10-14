@@ -4,67 +4,66 @@ hl.bind("CTRL+SUPER+ALT+Slash", hl.dsp.exec_cmd("xdg-open ~/.config/hypr/custom/
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/custom/scripts/handle_lid.py close"), { locked = true, description = "Lid: Closed" })
 hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/custom/scripts/handle_lid.py open"), { locked = true, description = "Lid: Opened" })
 
--- Unbind default overview from SUPER+Tab so it can be used for cross-workspace window switching
+-- Unbind default overview from SUPER+Tab so it can be used for visual window switcher
 pcall(function() hl.unbind("SUPER + Tab") end)
 pcall(function() hl.unbind("SUPER+Tab") end)
 pcall(function() hl.unbind("ALT + Tab") end)
 pcall(function() hl.unbind("ALT+Tab") end)
 
--- Cross-workspace Window Cycler (MRU with rapid cycle support)
-local last_cycle_time = 0
-local cycle_idx = 1
-local mru_windows = {}
+-- Define switcher submap for visual Alt+Tab / Super+Tab
+hl.define_submap("alttab", function()
+    -- Tab / Shift+Tab cycling while holding modifiers
+    hl.bind("ALT + Tab", hl.dsp.global("quickshell:altTabNext"))
+    hl.bind("ALT + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"))
+    hl.bind("SUPER + Tab", hl.dsp.global("quickshell:altTabNext"))
+    hl.bind("SUPER + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"))
+    hl.bind("Tab", hl.dsp.global("quickshell:altTabNext"))
+    hl.bind("SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"))
 
-function _G.cycle_windows_cross_workspace(reverse)
-    local now = os.clock()
-    -- Rebuild MRU list if more than 1.5s passed since last cycle, or cache empty
-    if (now - last_cycle_time > 1.5) or (#mru_windows == 0) then
-        local all_wins = hl.get_windows()
-        mru_windows = {}
-        for _, w in ipairs(all_wins) do
-            if w.mapped and not w.hidden and w.workspace and w.workspace.id >= 1 then
-                table.insert(mru_windows, w)
-            end
-        end
+    -- Arrow keys navigation
+    hl.bind("Right", hl.dsp.global("quickshell:altTabNext"), { ignore_mods = true })
+    hl.bind("Left", hl.dsp.global("quickshell:altTabPrev"), { ignore_mods = true })
 
-        if #mru_windows <= 1 then
-            return
-        end
+    -- Enter to commit, Escape to cancel
+    hl.bind("Return", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { ignore_mods = true })
+    hl.bind("Escape", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCancel"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { ignore_mods = true })
 
-        -- Sort by focus_history_id: 0 is current, 1 is previous, 2 is older...
-        table.sort(mru_windows, function(a, b)
-            return (a.focus_history_id or 999) < (b.focus_history_id or 999)
-        end)
+    -- Modifier release handlers: commits selection and exits submap
+    hl.bind("Alt_L", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { release = true, ignore_mods = true })
+    hl.bind("Alt_R", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { release = true, ignore_mods = true })
+    hl.bind("SUPER_L", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { release = true, ignore_mods = true })
+    hl.bind("SUPER_R", function()
+        hl.dispatch(hl.dsp.global("quickshell:altTabCommit"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { release = true, ignore_mods = true })
+end)
 
-        cycle_idx = 1
-    end
-
-    last_cycle_time = now
-
-    if #mru_windows <= 1 then
-        return
-    end
-
+-- Entry keybinds to open switcher and enter submap
+local function start_switcher(reverse)
     if reverse then
-        cycle_idx = cycle_idx - 1
-        if cycle_idx < 1 then
-            cycle_idx = #mru_windows
-        end
+        hl.dispatch(hl.dsp.global("quickshell:altTabPrev"))
     else
-        cycle_idx = cycle_idx + 1
-        if cycle_idx > #mru_windows then
-            cycle_idx = 1
-        end
+        hl.dispatch(hl.dsp.global("quickshell:altTabNext"))
     end
-
-    local target = mru_windows[cycle_idx]
-    if target and target.address then
-        hl.dispatch(hl.dsp.focus({ window = "address:" .. target.address }))
-    end
+    hl.dispatch(hl.dsp.submap("alttab"))
 end
 
--- Bind ALT+Tab and SUPER+Tab to cycle windows irrespective of workspace
-hl.bind("ALT+Tab", function() cycle_windows_cross_workspace(false) end, { description = "Window: Cycle next across all workspaces" })
-hl.bind("ALT+SHIFT+Tab", function() cycle_windows_cross_workspace(true) end, { description = "Window: Cycle prev across all workspaces" })
-hl.bind("SUPER+Tab", function() cycle_windows_cross_workspace(false) end, { description = "Window: Cycle next across all workspaces" })
-hl.bind("SUPER+SHIFT+Tab", function() cycle_windows_cross_workspace(true) end, { description = "Window: Cycle prev across all workspaces" })
+hl.bind("ALT + Tab", function() start_switcher(false) end, { description = "Window: Visual Alt-Tab Switcher" })
+hl.bind("ALT + SHIFT + Tab", function() start_switcher(true) end, { description = "Window: Visual Alt-Tab Switcher (prev)" })
+hl.bind("SUPER + Tab", function() start_switcher(false) end, { description = "Window: Visual Super-Tab Switcher" })
+hl.bind("SUPER + SHIFT + Tab", function() start_switcher(true) end, { description = "Window: Visual Super-Tab Switcher (prev)" })
