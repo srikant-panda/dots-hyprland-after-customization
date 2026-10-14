@@ -67,14 +67,14 @@ Scope {
 
         if (validWins.length === 0) {
             altTabScope.windows = [];
-            return [];
+            return { list: [], activeIndex: 0 };
         }
 
-        // Deterministic serial order:
+        // Strict, physical Left-to-Right serial sort:
         // 1. Workspace ID ascending (WS 1 -> WS 2 -> WS 3)
         // 2. Physical X coordinate ascending (left to right)
         // 3. Physical Y coordinate ascending (top to bottom)
-        // 4. Address ascending (tie-breaker)
+        // 4. Stable tie-breaker: address
         validWins.sort((a, b) => {
             const diffWs = wsKey(a) - wsKey(b);
             if (diffWs !== 0) return diffWs;
@@ -101,36 +101,37 @@ Scope {
             }
         }
 
-        // Find index of current active window in the sorted serial array
-        let activeIndex = -1;
-        if (currentAddr) {
-            activeIndex = validWins.findIndex(w => (w.address || "").toLowerCase() === currentAddr);
-        }
-        if (activeIndex === -1) {
-            activeIndex = validWins.findIndex(w => w && w.focusHistoryID === 0);
-        }
-
-        // Rotate array so current active window is at index 0 (the starting window)
-        // Serial progression: [Current, NextInSerial1, NextInSerial2, ...]
-        if (activeIndex > 0) {
-            validWins = validWins.slice(activeIndex).concat(validWins.slice(0, activeIndex));
-        }
-
-        // Connect toplevels for ScreencopyView live thumbnails and tag starting window
+        // Connect toplevels for ScreencopyView live thumbnails and find activeIndex
         const toplevelList = ToplevelManager.toplevels.values;
+        let activeIndex = -1;
         for (let i = 0; i < validWins.length; i++) {
             const win = validWins[i];
-            win.isCurrent = (i === 0);
             const addr = (win.address || "").toLowerCase().replace(/^0x/, "");
             win.toplevel = toplevelList.find(t => {
                 if (!t || !t.HyprlandToplevel) return false;
                 const tAddr = (t.HyprlandToplevel.address || "").toLowerCase().replace(/^0x/, "");
                 return tAddr === addr;
             }) || null;
+
+            if (currentAddr && (win.address || "").toLowerCase() === currentAddr) {
+                activeIndex = i;
+            }
+        }
+
+        if (activeIndex === -1) {
+            activeIndex = validWins.findIndex(w => w && w.focusHistoryID === 0);
+        }
+        if (activeIndex === -1) {
+            activeIndex = 0;
+        }
+
+        // Mark the starting/current active window
+        for (let i = 0; i < validWins.length; i++) {
+            validWins[i].isCurrent = (i === activeIndex);
         }
 
         altTabScope.windows = validWins;
-        return validWins;
+        return { list: validWins, activeIndex: activeIndex };
     }
 
     function ensureVisible() {
@@ -141,13 +142,16 @@ Scope {
 
     function next() {
         if (!altTabScope.open) {
-            const list = refreshWindows();
-            if (list.length === 0) return;
+            const res = refreshWindows();
+            const list = res.list;
+            if (!list || list.length === 0) return;
             altTabScope.open = true;
-            // On open, highlight index 1 (the next window in serial order)
-            altTabScope.selectedIndex = (list.length > 1) ? 1 : 0;
+            // Left-to-Right: move from current window to next window on the right
+            const startIdx = res.activeIndex;
+            altTabScope.selectedIndex = (list.length > 1) ? ((startIdx + 1) % list.length) : 0;
         } else {
             if (altTabScope.windows.length === 0) return;
+            // Advance forward: Left to Right
             altTabScope.selectedIndex = (altTabScope.selectedIndex + 1) % altTabScope.windows.length;
         }
         ensureVisible();
@@ -155,13 +159,16 @@ Scope {
 
     function prev() {
         if (!altTabScope.open) {
-            const list = refreshWindows();
-            if (list.length === 0) return;
+            const res = refreshWindows();
+            const list = res.list;
+            if (!list || list.length === 0) return;
             altTabScope.open = true;
-            // On reverse open (Alt+Shift+Tab), highlight previous window (end of serial list)
-            altTabScope.selectedIndex = (list.length > 1) ? (list.length - 1) : 0;
+            // Reverse (Shift enabled): move from current window to previous window on the left
+            const startIdx = res.activeIndex;
+            altTabScope.selectedIndex = (list.length > 1) ? ((startIdx - 1 + list.length) % list.length) : 0;
         } else {
             if (altTabScope.windows.length === 0) return;
+            // Advance backward: Reverse
             altTabScope.selectedIndex = (altTabScope.selectedIndex - 1 + altTabScope.windows.length) % altTabScope.windows.length;
         }
         ensureVisible();
@@ -314,7 +321,7 @@ Scope {
                 spacing: 16
                 width: hudCard.implicitWidth - 36
 
-                // Windows Horizontal ListView with direct window previews
+                // Windows Horizontal ListView with direct window previews (Left to Right layout)
                 ListView {
                     id: windowListView
                     Layout.alignment: Qt.AlignHCenter
@@ -334,7 +341,7 @@ Scope {
 
                         readonly property bool isSelected: index === altTabScope.selectedIndex
                         readonly property bool isHovered: itemMouseArea.containsMouse
-                        readonly property bool isCurrent: itemCard.index === 0
+                        readonly property bool isCurrent: itemCard.modelData?.isCurrent ?? false
 
                         width: 236
                         height: 184

@@ -18,15 +18,23 @@ local release_keys = {
 
 -- Define switcher submap for visual Alt+Tab / Super+Tab
 hl.define_submap("alttab", function()
-    -- Tab / Shift+Tab cycling while holding modifiers
+    -- Tab / Shift+Tab cycling while holding modifiers (Forward: Left to Right, Reverse: Shift enabled)
     hl.bind("ALT + Tab", hl.dsp.global("quickshell:altTabNext"), { repeating = true })
     hl.bind("ALT + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("ALT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("ALT + SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+
     hl.bind("SUPER + Tab", hl.dsp.global("quickshell:altTabNext"), { repeating = true })
     hl.bind("SUPER + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
-    hl.bind("Tab", hl.dsp.global("quickshell:altTabNext"), { repeating = true, ignore_mods = true })
-    hl.bind("SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("SUPER + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("SUPER + SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
 
-    -- Arrow keys navigation
+    hl.bind("Tab", hl.dsp.global("quickshell:altTabNext"), { repeating = true })
+    hl.bind("SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+    hl.bind("SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+
+    -- Arrow keys navigation (Right = forward/next, Left = reverse/prev)
     hl.bind("Right", hl.dsp.global("quickshell:altTabNext"), { ignore_mods = true })
     hl.bind("Left", hl.dsp.global("quickshell:altTabPrev"), { ignore_mods = true })
 
@@ -68,9 +76,17 @@ hl.bind("ALT + Tab", hl.dsp.submap("alttab"), { repeating = true })
 
 hl.bind("ALT + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true, description = "Window: Visual Alt-Tab Switcher (prev)" })
 hl.bind("ALT + SHIFT + Tab", hl.dsp.submap("alttab"), { repeating = true })
+hl.bind("ALT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+hl.bind("ALT + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
+hl.bind("ALT + SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+hl.bind("ALT + SHIFT + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
 
 hl.bind("SUPER + Tab", hl.dsp.global("quickshell:altTabNext"), { repeating = true, description = "Window: Visual Super-Tab Switcher" })
 hl.bind("SUPER + Tab", hl.dsp.submap("alttab"), { repeating = true })
 
 hl.bind("SUPER + SHIFT + Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true, description = "Window: Visual Super-Tab Switcher (prev)" })
 hl.bind("SUPER + SHIFT + Tab", hl.dsp.submap("alttab"), { repeating = true })
+hl.bind("SUPER + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+hl.bind("SUPER + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
+hl.bind("SUPER + SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
+hl.bind("SUPER + SHIFT + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
