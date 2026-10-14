@@ -193,13 +193,16 @@ Scope {
         name: "altTabCommit"
         description: "Visual Switcher: Commit selection"
         onPressed: altTabScope.commit()
+        onReleased: altTabScope.commit()
     }
 
     GlobalShortcut {
         name: "altTabCancel"
         description: "Visual Switcher: Cancel switcher"
         onPressed: altTabScope.cancel()
+        onReleased: altTabScope.cancel()
     }
+
 
     Loader {
         id: switcherLoader
@@ -215,9 +218,8 @@ Scope {
 
             WlrLayershell.namespace: "quickshell:altTab"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             color: "transparent"
-
             anchors {
                 top: true
                 bottom: true
@@ -225,43 +227,6 @@ Scope {
                 right: true
             }
 
-            // Keyboard handler for on-demand key capture (including modifier release)
-            Item {
-                id: keyCatch
-                anchors.fill: parent
-                focus: true
-                Component.onCompleted: keyCatch.forceActiveFocus()
-
-                Keys.onPressed: event => {
-                    if (event.key === Qt.Key_Tab) {
-                        if (event.modifiers & Qt.ShiftModifier) {
-                            altTabScope.prev();
-                        } else {
-                            altTabScope.next();
-                        }
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_Right) {
-                        altTabScope.next();
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_Left) {
-                        altTabScope.prev();
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        altTabScope.commit();
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_Escape) {
-                        altTabScope.cancel();
-                        event.accepted = true;
-                    }
-                }
-
-                Keys.onReleased: event => {
-                    if (event.key === Qt.Key_Alt || event.key === Qt.Key_Meta || event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R) {
-                        altTabScope.commit();
-                        event.accepted = true;
-                    }
-                }
-            }
 
             // Dim backdrop
             Rectangle {
