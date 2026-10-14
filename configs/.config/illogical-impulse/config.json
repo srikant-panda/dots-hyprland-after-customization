@@ -80,7 +80,7 @@
             "workspaceZoom": 1.07
         },
         "thumbnailPath": "",
-        "wallpaperPath": "/home/srikant/Wallpapers/wallpapers/Night monochrome.jpg",
+        "wallpaperPath": "/home/srikant/Wallpapers/wallpapers/Anime-Purple-eyes.png",
         "widgets": {
             "clock": {
                 "cookie": {
@@ -159,8 +159,7 @@
             "memoryWarningThreshold": 95,
             "swapWarningThreshold": 85
         },
-        "screenList": [
-        ],
+        "screenList": [],
         "showBackground": true,
         "tooltips": {
             "clickToShow": false
@@ -230,8 +229,7 @@
         "height": 60,
         "hoverRegionHeight": 2,
         "hoverToReveal": true,
-        "ignoredAppRegexes": [
-        ],
+        "ignoredAppRegexes": [],
         "monochromeIcons": false,
         "pinnedApps": [
             "org.kde.dolphin",
