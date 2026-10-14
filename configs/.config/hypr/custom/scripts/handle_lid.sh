@@ -1,0 +1,1 @@
+/home/srikant/.config/hypr/custom/scripts/handle_lid.py

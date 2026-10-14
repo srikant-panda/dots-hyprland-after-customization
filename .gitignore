@@ -1,0 +1,17 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Logs, locks & runtime files
+*.log
+*.lock
+*.pid
+
+# OS & editor artifacts
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo

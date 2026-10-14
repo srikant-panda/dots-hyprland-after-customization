@@ -1,0 +1,120 @@
+# Illogical-Impulse & Hyprland Customizations Backup
+
+This bundle contains all your personal customizations, bug fixes, and enhancements for **illogical-impulse / dots-hyprland**.
+
+If you ever reinstall your system or re-clone `dots-hyprland`, you can re-apply all your customizations instantly with a single command.
+
+---
+
+## ⚡ 1-Step Quick Restore
+
+After installing the base `dots-hyprland` dotfiles on a fresh system, run:
+
+```bash
+bash ~/dots-customizations/apply-customizations.sh
+```
+
+*(Or `./apply-customizations.sh` from inside this directory)*
+
+### What the restore script does automatically:
+1. **Creates a timestamped safety backup** of your existing configurations in `~/ii-backups/` before touching anything.
+2. **Applies all custom configuration files** to `~/.config/`.
+3. **Ensures `~/Pictures/Screenshots` directory exists**.
+4. **Verifies and installs HyprMod fixes** (`pycairo` support and the vertical monitor preview snapping bug fix).
+5. **Reloads Hyprland and restarts Quickshell** seamlessly.
+
+---
+
+## 📦 What Customizations Are Included?
+
+### 1. Top Bar Clipboard Applet
+- **File:** `~/.config/quickshell/ii/modules/ii/bar/ClipboardButton.qml`
+- **Integrated in:** `~/.config/quickshell/ii/modules/ii/bar/BarContent.qml`
+- **Config:** `~/.config/quickshell/ii/modules/common/Config.qml` (`clipboard.enable: true`)
+- **Features:** A dedicated clipboard applet next to system tray on the top bar. Shows clipboard history with live search, copy-on-click, delete item, and clear history.
+
+### 2. Battery Popup
+- **File:** `~/.config/quickshell/ii/modules/ii/bar/BatteryPopup.qml`
+- **Features:** Clean battery percentage, charging status, and remaining time with the battery health indicator cleanly removed.
+
+### 3. Right Sidebar Responsiveness (768p & 1080p+)
+- **Files:**
+  - `~/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml`
+  - `~/.config/quickshell/ii/modules/ii/sidebarRight/CenterWidgetGroup.qml`
+  - `~/.config/quickshell/ii/modules/ii/sidebarRight/notifications/NotificationList.qml`
+- **Features:**
+  - Preserves `SystemButtonRow` pinned at the top.
+  - Dynamically adapts between tall screens (1080p+) and short screens (1366x768).
+  - Smooth vertical `StyledFlickable` touchpad/mouse scrolling when height is constrained.
+  - Completely eliminates widget collision, squishing, and overlapping.
+  - Anchors notification placeholder cleanly above notification status buttons.
+
+### 4. Screenshot Save Path Configuration
+- **Files:**
+  - `~/.config/swappy/config` (`save_dir = ~/Pictures/Screenshots`)
+  - `~/.config/satty/config.toml` (`save-dir = ~/Pictures/Screenshots`)
+  - `~/.config/illogical-impulse/config.json` (`screenSnip.savePath = ~/Pictures/Screenshots`)
+- **Features:** Both Super+Shift+S region snip and full screen snips save to `~/Pictures/Screenshots`.
+
+### 5. Mouse & Touchpad Middle-Click Emulation
+- **File:** `~/.config/hypr/hyprland-gui.lua`
+- **Features:** `input.touchpad.middle_button_emulation = true` enables middle-click by pressing both left and right buttons simultaneously.
+
+### 6. HyprMod Dual-Monitor Snapping & Layout
+- **File:** `~/.local/lib/python3.14/site-packages/hyprmod/ui/monitor_preview.py`
+- **Features:** Fixed the drag-and-drop collision bug in HyprMod that blocked vertical monitor positioning, allowing monitor placement above/below (e.g. secondary monitor above laptop screen).
+
+### 7. Hyprlock 12-Hour Clock
+- **File:** `~/.config/hypr/hyprlock.conf`
+- **Features:** Configured lockscreen clock to 12-hour format (`$TIME12`).
+
+### 8. HyprMod Multi-Monitor Unmirror Fix
+- **File:** `~/.local/lib/python3.14/site-packages/hyprland_monitors/monitors.py`
+- **Features:** Solved Hyprland 0.56.2 additive monitor mirroring issue where turning off mirroring in HyprMod did not release the mirror. Emits `mirror = ""` to explicitly detach mirrored displays.
+
+### 9. Multi-Monitor Laptop Lid & Clamshell Management
+- **Files:**
+  - `~/.config/hypr/custom/scripts/handle_lid.py`
+  - `~/.config/hypr/custom/keybinds.lua` (`switch:on:Lid Switch` & `switch:off:Lid Switch`)
+  - `~/.config/hypr/custom/execs.lua` (autostart hotplug daemon)
+- **Features:**
+  - **State A (Lid Open + External):** Restores both internal and external displays at user's configured positions (`0x0` and `320x-768`), restoring primary focus.
+  - **State B (Lid Closed + External):** Clamshell mode; cleanly disables laptop internal panel and makes external monitor the sole active primary display at `0x0`.
+  - **State C (External Disconnected):** Laptop-only fallback; guarantees internal display remains enabled at `0x0`.
+  - **State D (Hotplug while Closed):** Seamlessly enables external monitor as primary at `0x0`.
+  - **Fail-safe & Safe:** Exclusive file locking (`/tmp/hypr_lid_monitor.lock`), 400ms event debouncing, zero touch of system power/logind/suspend settings.
+
+---
+
+## 🗂 Directory Structure
+
+```
+dots-customizations/
+├── README.md                      # This documentation
+├── apply-customizations.sh        # 1-click restore script
+├── restore-original-upstream.sh   # Revert to clean official upstream state
+├── configs/                       # Raw customized configuration files
+│   ├── .config/
+│   │   ├── hypr/                  # Hyprland & HyprMod configs
+│   │   ├── illogical-impulse/     # Screen snip configs
+│   │   ├── quickshell/            # Quickshell UI mods
+│   │   ├── satty/                 # Satty config
+│   │   └── swappy/                # Swappy config
+│   └── hyprmod/
+│       └── monitor_preview.py      # HyprMod python bug fix
+├── patches/                        # Unified diffs against upstream
+│   ├── hyprland.patch
+│   └── quickshell.patch
+└── archive/
+    └── customizations-backup.tar.gz # Single compressed portable archive
+```
+
+---
+
+## 🔄 How to Revert to Official Upstream State
+
+If you ever want to revert everything back to the untouched official upstream state:
+
+```bash
+bash ~/dots-customizations/restore-original-upstream.sh
+```

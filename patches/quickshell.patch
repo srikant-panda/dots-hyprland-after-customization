@@ -1,0 +1,238 @@
+diff -ruN ./modules/common/Config.qml /home/srikant/.config/quickshell/ii/modules/common/Config.qml
+--- ./modules/common/Config.qml	2026-10-13 20:04:54.591285458 +0530
++++ /home/srikant/.config/quickshell/ii/modules/common/Config.qml	2026-10-13 22:39:29.258778954 +0530
+@@ -241,6 +241,9 @@
+                 property bool showBackground: true
+                 property bool verbose: true
+                 property bool vertical: false
++                property JsonObject clipboard: JsonObject {
++                    property bool enable: true
++                }
+                 property JsonObject resources: JsonObject {
+                     property bool alwaysShowSwap: true
+                     property bool alwaysShowCpu: true
+diff -ruN ./modules/ii/bar/BarContent.qml /home/srikant/.config/quickshell/ii/modules/ii/bar/BarContent.qml
+--- ./modules/ii/bar/BarContent.qml	2026-10-13 20:04:54.597750710 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/bar/BarContent.qml	2026-10-13 22:39:19.524779413 +0530
+@@ -317,6 +317,13 @@
+                 }
+             }
+ 
++            ClipboardButton {
++                id: clipboardButton
++                visible: (Config.options.bar.clipboard?.enable ?? true) && root.useShortenedForm < 2
++                Layout.alignment: Qt.AlignVCenter
++                barHovered: barRightSideMouseArea.hovered
++            }
++
+             SysTray {
+                 visible: root.useShortenedForm === 0
+                 Layout.fillWidth: false
+diff -ruN ./modules/ii/bar/BatteryPopup.qml /home/srikant/.config/quickshell/ii/modules/ii/bar/BatteryPopup.qml
+--- ./modules/ii/bar/BatteryPopup.qml	2026-10-13 20:04:54.597750710 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/bar/BatteryPopup.qml	2026-10-13 22:51:12.795745748 +0530
+@@ -62,11 +62,5 @@
+                 }
+             }
+         }
+-
+-        StyledPopupValueRow {
+-            icon: "heart_check"
+-            label: Translation.tr("Health:")
+-            value: `${(Battery.health).toFixed(1)}%`
+-        }
+     }
+ }
+diff -ruN ./modules/ii/bar/ClipboardButton.qml /home/srikant/.config/quickshell/ii/modules/ii/bar/ClipboardButton.qml
+--- ./modules/ii/bar/ClipboardButton.qml	1970-01-01 05:30:00.000000000 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/bar/ClipboardButton.qml	2026-10-13 22:39:09.589779882 +0530
+@@ -0,0 +1,66 @@
++import QtQuick
++import QtQuick.Layouts
++import Quickshell
++import Quickshell.Hyprland
++import qs
++import qs.services
++import qs.modules.common
++import qs.modules.common.widgets
++import qs.modules.common.functions
++
++RippleButton {
++    id: root
++
++    property bool barHovered: false
++    property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
++
++    Behavior on colText {
++        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
++    }
++
++    Layout.alignment: Qt.AlignVCenter
++    Layout.fillWidth: false
++
++    implicitWidth: 30
++    implicitHeight: 28
++
++    buttonRadius: Appearance.rounding.full
++    colBackground: (barHovered || hovered) ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
++    colBackgroundHover: Appearance.colors.colLayer1Hover
++    colRipple: Appearance.colors.colLayer1Active
++    colBackgroundToggled: Appearance.colors.colSecondaryContainer
++    colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
++    colRippleToggled: Appearance.colors.colSecondaryContainerActive
++
++    toggled: GlobalStates.overviewOpen && (LauncherSearch.query.startsWith(Config.options.search.prefix.clipboard))
++
++    onPressed: {
++        Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "search", "clipboardToggle"]);
++    }
++
++    contentItem: Item {
++        anchors.fill: parent
++        MaterialSymbol {
++            anchors.centerIn: parent
++            text: "content_paste"
++            iconSize: Appearance.font.pixelSize.larger
++            color: root.colText
++        }
++    }
++
++    property bool showTooltipTimedOut: false
++    onHoveredChanged: {
++        if (!hovered) showTooltipTimedOut = false;
++    }
++    Timer {
++        running: root.hovered
++        interval: 350
++        onTriggered: root.showTooltipTimedOut = true
++    }
++
++    PopupToolTip {
++        extraVisibleCondition: root.showTooltipTimedOut && !root.toggled
++        text: Translation.tr("Clipboard") + (Cliphist.entries.length > 0 ? ` (${Cliphist.entries.length})` : "")
++        anchorEdges: (!Config.options.bar.bottom && !Config.options.bar.vertical) ? Edges.Bottom : Edges.Top
++    }
++}
+diff -ruN ./modules/ii/sidebarRight/CenterWidgetGroup.qml /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/CenterWidgetGroup.qml
+--- ./modules/ii/sidebarRight/CenterWidgetGroup.qml	2026-10-13 20:04:54.602291063 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/CenterWidgetGroup.qml	2026-10-14 00:10:06.999522297 +0530
+@@ -9,6 +9,9 @@
+ 
+ Rectangle {
+     id: root
++    clip: true
++    implicitHeight: 140
++    Layout.minimumHeight: 120
+     radius: Appearance.rounding.normal
+     color: Appearance.colors.colLayer1
+ 
+diff -ruN ./modules/ii/sidebarRight/notifications/NotificationList.qml /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/notifications/NotificationList.qml
+--- ./modules/ii/sidebarRight/notifications/NotificationList.qml	2026-10-13 20:04:54.602553796 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/notifications/NotificationList.qml	2026-10-14 00:10:11.773522072 +0530
+@@ -33,6 +33,11 @@
+     // Placeholder when list is empty
+     PagePlaceholder {
+         shown: Notifications.list.length === 0
++        anchors.left: parent.left
++        anchors.right: parent.right
++        anchors.top: parent.top
++        anchors.bottom: statusRow.top
++        anchors.bottomMargin: 5
+         icon: "notifications_active"
+         description: Translation.tr("Nothing")
+         shape: MaterialShape.Shape.Ghostish
+diff -ruN ./modules/ii/sidebarRight/SidebarRightContent.qml /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml
+--- ./modules/ii/sidebarRight/SidebarRightContent.qml	2026-10-13 20:04:54.602291063 +0530
++++ /home/srikant/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml	2026-10-14 00:10:28.256521294 +0530
+@@ -71,42 +71,60 @@
+                 Layout.bottomMargin: 0
+             }
+ 
+-            Loader {
+-                id: slidersLoader
++            StyledFlickable {
++                id: flickable
+                 Layout.fillWidth: true
+-                visible: active
+-                active: {
+-                    const configQuickSliders = Config.options.sidebar.quickSliders
+-                    if (!configQuickSliders.enable) return false
+-                    if (!configQuickSliders.showMic && !configQuickSliders.showVolume && !configQuickSliders.showBrightness) return false;
+-                    return true;
+-                }
+-                sourceComponent: QuickSliders {}
+-            }
++                Layout.fillHeight: true
++                clip: true
++                flickableDirection: Flickable.VerticalFlick
++                contentWidth: width
++                contentHeight: contentColumn.height
+ 
+-            LoaderedQuickPanelImplementation {
+-                styleName: "classic"
+-                sourceComponent: ClassicQuickPanel {}
+-            }
++                ColumnLayout {
++                    id: contentColumn
++                    width: flickable.width
++                    height: Math.max(flickable.height, implicitHeight)
++                    spacing: sidebarPadding
+ 
+-            LoaderedQuickPanelImplementation {
+-                styleName: "android"
+-                sourceComponent: AndroidQuickPanel {
+-                    editMode: root.editMode
+-                }
+-            }
++                    Loader {
++                        id: slidersLoader
++                        Layout.fillWidth: true
++                        visible: active
++                        active: {
++                            const configQuickSliders = Config.options.sidebar.quickSliders
++                            if (!configQuickSliders.enable) return false
++                            if (!configQuickSliders.showMic && !configQuickSliders.showVolume && !configQuickSliders.showBrightness) return false;
++                            return true;
++                        }
++                        sourceComponent: QuickSliders {}
++                    }
+ 
+-            CenterWidgetGroup {
+-                Layout.alignment: Qt.AlignHCenter
+-                Layout.fillHeight: true
+-                Layout.fillWidth: true
+-            }
++                    LoaderedQuickPanelImplementation {
++                        styleName: "classic"
++                        sourceComponent: ClassicQuickPanel {}
++                    }
+ 
+-            BottomWidgetGroup {
+-                Layout.alignment: Qt.AlignHCenter
+-                Layout.fillHeight: false
+-                Layout.fillWidth: true
+-                Layout.preferredHeight: implicitHeight
++                    LoaderedQuickPanelImplementation {
++                        styleName: "android"
++                        sourceComponent: AndroidQuickPanel {
++                            editMode: root.editMode
++                        }
++                    }
++
++                    CenterWidgetGroup {
++                        Layout.alignment: Qt.AlignHCenter
++                        Layout.fillHeight: true
++                        Layout.fillWidth: true
++                        Layout.minimumHeight: 140
++                    }
++
++                    BottomWidgetGroup {
++                        Layout.alignment: Qt.AlignHCenter
++                        Layout.fillHeight: false
++                        Layout.fillWidth: true
++                        Layout.preferredHeight: implicitHeight
++                    }
++                }
+             }
+         }
+     }

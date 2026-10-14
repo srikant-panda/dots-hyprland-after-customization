@@ -1,0 +1,12 @@
+[general]
+fullscreen = false
+early-exit = true
+initial-tool = "brush"
+copy-command = "wl-copy"
+save-after-copy = false
+default-hide-toolbars = false
+primary-highlighter = "block"
+
+[save]
+save-dir = "/home/srikant/Pictures/Screenshots"
+save-filename-format = "Screenshot_%Y-%m-%d_%H.%M.%S.png"
