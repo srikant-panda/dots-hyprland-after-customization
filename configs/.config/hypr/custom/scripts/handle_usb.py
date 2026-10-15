@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-handle_usb.py - Hyprland USB Device Plug & Unplug Notifier
----------------------------------------------------------
-Monitors udev events for USB device connection and disconnection.
-Sends native desktop notifications via notify-send when devices are
-plugged in or removed.
+handle_usb.py - System Notifications for USB Device Plug & Unplug
+----------------------------------------------------------------
+Emulates the native KDE Plasma / System Notifications daemon for Hyprland.
+Monitors udev in real-time and issues "USB Device Detected" and
+"USB Device Removed" notifications with authentic audio feedback.
 """
 
 import sys
@@ -44,16 +44,21 @@ def get_initial_usb_devices():
                 pass
     return devices
 
-def send_notification(summary: str, body: str, icon: str = "drive-removable-media-usb"):
+def send_notification(summary: str, body: str, icon: str = "drive-removable-media-usb", sound: str = None):
     try:
-        subprocess.run([
+        cmd = [
             "notify-send",
-            "-a", "Device Notifier",
+            "-a", "System Notifications",
             "-i", icon,
             summary,
             body,
             "-u", "normal"
-        ], check=False)
+        ]
+        if sound:
+            cmd.extend(["-h", f"string:sound-name:{sound}"])
+        subprocess.run(cmd, check=False)
+        if sound:
+            subprocess.Popen(["canberra-gtk-play", "-i", sound], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
 
@@ -65,23 +70,25 @@ def process_event(event: dict, devices: dict):
         return
 
     vid = event.get("ID_VENDOR_ID", "")
-    if vid == "1d6b":  # Root hub
+    if vid == "1d6b":  # Skip root hubs
         return
 
     action = event.get("ACTION")
     devpath = event.get("DEVPATH", "")
     dev_key = os.path.basename(devpath) if devpath else event.get("DEVNAME", "")
 
-    # Clean name
+    # Clean display name
     name = (
         event.get("ID_MODEL_FROM_DATABASE")
         or event.get("ID_MODEL")
         or event.get("PRODUCT_NAME")
     )
+    mfr = event.get("ID_VENDOR_FROM_DATABASE") or event.get("ID_VENDOR", "")
     if not name:
-        mfr = event.get("ID_VENDOR_FROM_DATABASE") or event.get("ID_VENDOR", "")
         name = f"{mfr}".strip() or "USB Device"
-    name = name.replace("_", " ").strip()
+    elif mfr and mfr.lower() not in name.lower() and not name.lower().startswith(mfr.lower()):
+        name = f"{mfr} {name}"
+    name = " ".join(name.replace("_", " ").split())
 
     # Determine icon
     driver = event.get("ID_USB_DRIVER", "")
@@ -95,13 +102,12 @@ def process_event(event: dict, devices: dict):
 
     if action == "add":
         devices[dev_key] = name
-        send_notification("USB Device Connected", name, icon)
+        send_notification("USB Device Detected", f"{name} has been connected.", icon, "device-added")
     elif action == "remove":
         removed_name = devices.pop(dev_key, name)
-        send_notification("USB Device Disconnected", removed_name, icon)
+        send_notification("USB Device Removed", f"{removed_name} has been disconnected.", icon, "device-removed")
 
 def run_monitor():
-    # Single instance lock
     lock_fd = open(LOCK_FILE, "w")
     try:
         fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
