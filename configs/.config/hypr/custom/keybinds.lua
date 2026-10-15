@@ -90,3 +90,36 @@ hl.bind("SUPER + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeat
 hl.bind("SUPER + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
 hl.bind("SUPER + SHIFT + ISO_Left_Tab", hl.dsp.global("quickshell:altTabPrev"), { repeating = true })
 hl.bind("SUPER + SHIFT + ISO_Left_Tab", hl.dsp.submap("alttab"), { repeating = true })
+
+-- ============================================================================
+-- Scratchpad Window Retrieval
+-- Retrieve / move window from scratchpad (special:special) back to active workspace
+-- ============================================================================
+local function retrieve_scratchpad_window()
+    local win = hl.get_active_window()
+    -- If focused window is currently in a special workspace, move it to current workspace (+0)
+    if win and win.workspace and (win.workspace.special or win.workspace.id < 0) then
+        hl.dispatch(hl.dsp.window.move({ workspace = "+0" }))
+        return
+    end
+
+    -- If currently on a regular workspace, check if any window exists in scratchpad
+    for _, w in ipairs(hl.get_windows()) do
+        if w.workspace and (w.workspace.special or w.workspace.id < 0) then
+            -- Open scratchpad to focus window, then pull it to current workspace (+0)
+            hl.dispatch(hl.dsp.workspace.toggle_special("special"))
+            hl.dispatch(hl.dsp.window.move({ workspace = "+0" }))
+            return
+        end
+    end
+end
+
+-- Key combinations for getting app back from scratchpad:
+-- 1. SUPER + SHIFT + ALT + S / SUPER + ALT + SHIFT + S (natural inverse of SUPER + ALT + S)
+-- 2. SUPER + ALT + B (B for "Back" / Bring back from scratchpad)
+-- 3. SUPER + ALT + Down (drop window from scratchpad down to current workspace)
+hl.bind("SUPER + SHIFT + ALT + S", retrieve_scratchpad_window, { description = "Window: Get back from scratchpad" })
+hl.bind("SUPER + ALT + SHIFT + S", retrieve_scratchpad_window, { description = "Window: Get back from scratchpad" })
+hl.bind("SUPER + ALT + B", retrieve_scratchpad_window, { description = "Window: Get back from scratchpad" })
+hl.bind("SUPER + ALT + Down", retrieve_scratchpad_window, { description = "Window: Get back from scratchpad" })
+
