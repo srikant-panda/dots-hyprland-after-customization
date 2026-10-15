@@ -109,6 +109,17 @@ bash ~/dots-customizations/apply-customizations.sh
   - Dynamic Material You theming extracted from video frames via `matugen`.
   - Updated `switchwall.sh` dependency helper to install `mpvpaper` from Arch AUR via `yay`.
 
+### 12. USB Device Plug & Unplug Notifier
+- **Files:**
+  - `~/.config/hypr/custom/scripts/handle_usb.py`
+  - `~/.config/hypr/custom/execs.lua`
+- **Features:**
+  - Monitors udev hardware events directly in real-time.
+  - Automatically sends native desktop notifications via `notify-send` when any USB device (flash drive, mouse, keyboard, phone, controller) is connected or disconnected.
+  - Intelligently filters out internal Linux Foundation root hubs and initial boot devices to prevent spam.
+  - Formats clean device names and chooses appropriate icons (`drive-removable-media-usb`, `input-mouse`, `audio-card`).
+  - Restores the missing USB plug/unplug notification functionality that was lost when transitioning away from KDE Plasma.
+
 ---
 
 ## 🗂 Directory Structure

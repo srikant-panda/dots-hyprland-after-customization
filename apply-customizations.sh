@@ -137,5 +137,6 @@ echo "  8. HyprMod: Multi-monitor unmirror fix applied."
 echo "  9. Hyprland: Multi-monitor lid behavior & clamshell auto-switching daemon."
 echo " 10. Hyprland: Scratchpad window retrieval keybinds (SUPER+ALT+B, etc.)."
 echo " 11. Wallpapers: Video/Motion wallpaper support in Quickshell picker & switchwall."
+echo " 12. Hardware: USB Device Plug & Unplug notifier daemon (handle_usb.py)."
 echo "===================================================================="
 
