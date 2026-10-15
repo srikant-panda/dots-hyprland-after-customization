@@ -90,7 +90,13 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 # Ensure custom scripts are executable
-chmod +x "$HOME/.config/hypr/custom/scripts"/*.py "$HOME/.config/hypr/custom/scripts"/*.sh 2>/dev/null || true
+chmod +x "$HOME/.config/hypr/custom/scripts"/*.py "$HOME/.config/hypr/custom/scripts"/*.sh "$HOME/.config/quickshell/ii/scripts/colors"/*.sh 2>/dev/null || true
+
+# Verify mpvpaper dependency for motion wallpapers
+if ! command -v mpvpaper >/dev/null 2>&1; then
+    echo "      [Notice] mpvpaper is not installed (required for motion/video wallpapers)."
+    echo "      Install with: yay -S mpvpaper"
+fi
 
 # 5. Reload Hyprland configuration
 echo "[5/6] Reloading Hyprland..."
@@ -130,5 +136,6 @@ echo "  7. HyprMod: Vertical (top/bottom) monitor snapping bug fix applied."
 echo "  8. HyprMod: Multi-monitor unmirror fix applied."
 echo "  9. Hyprland: Multi-monitor lid behavior & clamshell auto-switching daemon."
 echo " 10. Hyprland: Scratchpad window retrieval keybinds (SUPER+ALT+B, etc.)."
+echo " 11. Wallpapers: Video/Motion wallpaper support in Quickshell picker & switchwall."
 echo "===================================================================="
 

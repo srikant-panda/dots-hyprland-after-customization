@@ -94,6 +94,21 @@ bash ~/dots-customizations/apply-customizations.sh
   - Holding and pressing Tab repeatedly cycles through all open windows in sequence.
   - Microsecond latency directly executed in Hyprland's Lua core.
 
+### 11. Motion & Video Wallpaper Support
+- **Files:**
+  - `~/.config/quickshell/ii/services/Wallpapers.qml`
+  - `~/.config/quickshell/ii/modules/common/Images.qml`
+  - `~/.config/quickshell/ii/modules/ii/wallpaperSelector/WallpaperDirectoryItem.qml`
+  - `~/.config/quickshell/ii/modules/common/widgets/ThumbnailImage.qml`
+  - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
+- **Features:**
+  - Enables motion/video wallpapers (`.mp4`, `.webm`, `.mkv`, `.avi`, `.mov`) in Quickshell's GUI wallpaper selector.
+  - Automatic thumbnail extraction using `ffmpeg` for video files in the wallpaper browser.
+  - Distinct video badge icon on motion wallpaper thumbnails in the picker.
+  - Seamless integration with `mpvpaper` (hardware accelerated playback on Wayland), with automatic transparency for Quickshell background layer.
+  - Dynamic Material You theming extracted from video frames via `matugen`.
+  - Updated `switchwall.sh` dependency helper to install `mpvpaper` from Arch AUR via `yay`.
+
 ---
 
 ## 🗂 Directory Structure
