@@ -107,9 +107,11 @@ if command -v qs >/dev/null 2>&1; then
         pkill -x qs 2>/dev/null || true
         sleep 1
         nohup qs -c ii -d >/dev/null 2>&1 &
+        disown 2>/dev/null || true
         echo "      Quickshell restarted successfully."
     else
         nohup qs -c ii -d >/dev/null 2>&1 &
+        disown 2>/dev/null || true
         echo "      Quickshell started."
     fi
 fi
@@ -119,11 +121,14 @@ echo "  [SUCCESS] All customizations have been successfully applied!"
 echo "===================================================================="
 echo "Summary of applied features:"
 echo "  1. Top Bar: Clipboard button applet integrated with live history."
-echo "  2. Center Popup: Battery health indicator removed."
-echo "  3. Right Sidebar: Responsive StyledFlickable layout (768p + 1080p+)."
-echo "  4. Screenshots: Satty, Swappy & Snip configured to ~/Pictures/Screenshots."
-echo "  5. Mouse/Touchpad: Middle-button emulation & tap enabled."
-echo "  6. HyprMod: Vertical (top/bottom) monitor snapping bug fix applied."
-echo "  7. HyprMod: Multi-monitor unmirror fix applied."
-echo "  8. Hyprland: Multi-monitor lid behavior & clamshell auto-switching daemon."
+echo "  2. Top Bar: Live Network Speed monitor indicator (dynamic KB/s, MB/s, GB/s)."
+echo "  3. Center Popup: Battery health indicator removed."
+echo "  4. Right Sidebar: Responsive StyledFlickable layout (768p + 1080p+)."
+echo "  5. Screenshots: Satty, Swappy & Snip configured to ~/Pictures/Screenshots."
+echo "  6. Mouse/Touchpad: Middle-button emulation & tap enabled."
+echo "  7. HyprMod: Vertical (top/bottom) monitor snapping bug fix applied."
+echo "  8. HyprMod: Multi-monitor unmirror fix applied."
+echo "  9. Hyprland: Multi-monitor lid behavior & clamshell auto-switching daemon."
+echo " 10. Hyprland: Scratchpad window retrieval keybinds (SUPER+ALT+B, etc.)."
 echo "===================================================================="
+

@@ -324,6 +324,13 @@ Item { // Bar content region
                 barHovered: barRightSideMouseArea.hovered
             }
 
+            NetworkSpeedIndicator {
+                id: networkSpeedIndicator
+                visible: root.useShortenedForm < 2
+                Layout.alignment: Qt.AlignVCenter
+                barHovered: barRightSideMouseArea.hovered
+            }
+
             KdeConnectButton {
                 id: kdeConnectButton
                 visible: KdeConnectService.available && root.useShortenedForm < 2
