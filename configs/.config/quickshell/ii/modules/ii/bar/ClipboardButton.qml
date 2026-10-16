@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -32,19 +34,49 @@ RippleButton {
     colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
     colRippleToggled: Appearance.colors.colSecondaryContainerActive
 
-    toggled: GlobalStates.overviewOpen && (LauncherSearch.query.startsWith(Config.options.search.prefix.clipboard))
+    toggled: popupLoader.active
 
-    onPressed: {
-        Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "search", "clipboardToggle"]);
+    function togglePopup() {
+        if (popupLoader.active) {
+            popupLoader.item?.close();
+            popupLoader.active = false;
+        } else {
+            popupLoader.active = true;
+        }
+    }
+
+    onClicked: root.togglePopup()
+
+    Connections {
+        target: Cliphist
+        function onTogglePopupRequested() {
+            root.togglePopup();
+        }
     }
 
     contentItem: Item {
         anchors.fill: parent
+
         MaterialSymbol {
             anchors.centerIn: parent
-            text: "content_paste"
+            text: Cliphist.privateMode ? "shield" : "content_paste"
             iconSize: Appearance.font.pixelSize.larger
-            color: root.colText
+            color: Cliphist.privateMode ? Appearance.m3colors.m3tertiary : root.colText
+        }
+
+        // Private mode indicator dot
+        Rectangle {
+            visible: Cliphist.privateMode
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.topMargin: 2
+            anchors.rightMargin: 1
+            width: 8
+            height: 8
+            radius: 4
+            color: Appearance.m3colors.m3tertiary
+            border.width: 1
+            border.color: Appearance.colors.colLayer0
         }
     }
 
@@ -60,7 +92,25 @@ RippleButton {
 
     PopupToolTip {
         extraVisibleCondition: root.showTooltipTimedOut && !root.toggled
-        text: Translation.tr("Clipboard") + (Cliphist.entries.length > 0 ? ` (${Cliphist.entries.length})` : "")
+        text: {
+            let label = Translation.tr("Clipboard");
+            if (Cliphist.privateMode) {
+                label += " [Private Mode]";
+            }
+            if (Cliphist.entries.length > 0) {
+                label += ` (${Cliphist.entries.length})`;
+            }
+            return label;
+        }
         anchorEdges: (!Config.options.bar.bottom && !Config.options.bar.vertical) ? Edges.Bottom : Edges.Top
+    }
+
+    Loader {
+        id: popupLoader
+        active: false
+        sourceComponent: ClipboardPopup {
+            anchorItem: root
+            onPopupClosed: popupLoader.active = false
+        }
     }
 }

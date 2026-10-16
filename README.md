@@ -27,11 +27,20 @@ bash ~/dots-customizations/apply-customizations.sh
 
 ## 📦 What Customizations Are Included?
 
-### 1. Top Bar Clipboard Applet
-- **File:** `~/.config/quickshell/ii/modules/ii/bar/ClipboardButton.qml`
-- **Integrated in:** `~/.config/quickshell/ii/modules/ii/bar/BarContent.qml`
-- **Config:** `~/.config/quickshell/ii/modules/common/Config.qml` (`clipboard.enable: true`)
-- **Features:** A dedicated clipboard applet next to system tray on the top bar. Shows clipboard history with live search, copy-on-click, delete item, and clear history.
+### 1. Top Bar Clipboard Applet & Custom M3 Popup
+- **Files:**
+  - `~/.config/quickshell/ii/modules/ii/bar/ClipboardButton.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/ClipboardPopup.qml` (Custom M3 Popup)
+  - `~/.config/quickshell/ii/services/Cliphist.qml`
+  - `~/.config/quickshell/ii/modules/ii/overview/Overview.qml`
+  - `~/.config/hypr/hyprland/execs.lua`
+- **Features:**
+  - Replaces default center overview search with an authentic Material 3 dropdown popup anchored directly below the top-bar clipboard button (matching KDE Connect style).
+  - **Private Mode Toggle:** One-click toggle (with shield icon/badge) that temporarily disables saving copied items to cliphist history (`/tmp/cliphist_private_mode` guard).
+  - **Clear All:** Two-step confirmation wipe button (`delete_sweep`) to clear the entire clipboard history instantly.
+  - **Individual Item Deletion:** Instant delete button per clipboard item with 0ms optimistic removal.
+  - **Search & Filter:** Live fuzzy search with filter chips (`All`, `Text`, `Images` with thumbnail previews).
+  - **Global Keybind:** `SUPER + V` opens this custom popup anchored below the bar button.
 
 ### 2. Battery Popup
 - **File:** `~/.config/quickshell/ii/modules/ii/bar/BatteryPopup.qml`
