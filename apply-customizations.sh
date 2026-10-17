@@ -25,7 +25,7 @@ echo "[1/6] Created safety backup of current configs to:"
 echo "      $BACKUP_DIR"
 
 # Backup existing configs if present
-for item in quickshell/ii hypr illogical-impulse satty swappy; do
+for item in quickshell/ii hypr illogical-impulse satty swappy matugen kitty gtk-3.0 gtk-4.0 xsettingsd; do
     if [ -e "$HOME/.config/$item" ]; then
         mkdir -p "$BACKUP_DIR/$(dirname "$item")"
         cp -a "$HOME/.config/$item" "$BACKUP_DIR/$item"
@@ -35,6 +35,7 @@ done
 # 2. Copy all customized config files
 echo "[2/6] Applying custom configuration files..."
 cp -rv "$CONFIGS_SRC"/* "$HOME/.config/"
+rm -f "$HOME/.config/kitty"/*.auto.conf 2>/dev/null || true
 
 # 3. Check and configure screenshot tools
 echo "[3/6] Setting screenshot default directories to ~/Pictures/Screenshots..."
@@ -122,6 +123,12 @@ if command -v qs >/dev/null 2>&1; then
     fi
 fi
 
+# Refresh Material You colors and sync GTK / terminal configs
+if [ -f "$HOME/.config/quickshell/ii/scripts/colors/switchwall.sh" ]; then
+    echo "      Refreshing theme palettes and syncing GTK / Terminal settings..."
+    bash "$HOME/.config/quickshell/ii/scripts/colors/switchwall.sh" --noswitch >/dev/null 2>&1 || true
+fi
+
 echo "===================================================================="
 echo "  [SUCCESS] All customizations have been successfully applied!"
 echo "===================================================================="
@@ -141,5 +148,7 @@ echo " 12. Hardware: USB Device Plug & Unplug notifier daemon (handle_usb.py)."
 echo " 13. KDE Connect: File transfer and sharing status windows always open floating and centered."
 echo " 14. Top Bar: Windows-style collapsible System Tray with animated chevron arrow and pin/unpin."
 echo " 15. Top Bar: Responsive dynamic spacing preventing widget overlap and icon collisions."
+echo " 16. Terminal Theming: Dynamic Kitty & ANSI 16 color harmony for Light & Dark modes with full WCAG contrast."
+echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GTK 4, xsettingsd, and Qt/KDE."
 echo "===================================================================="
 

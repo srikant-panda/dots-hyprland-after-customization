@@ -148,6 +148,36 @@ bash ~/dots-customizations/apply-customizations.sh
   - **App Pinning System:** Hover over any app in the overflow popup and click the push-pin icon to pin it directly to the top bar. Right-click or toggle to unpin and return it to the hidden tray. Pinned preferences persist cleanly in `config.json`.
   - **Automatic Responsiveness & Overlap Elimination:** Bar modules dynamically adjust their width bounds based on available screen space and number of open widgets, preventing utility buttons, clock, battery pills, and tray apps from ever colliding or overlapping.
 
+### 15. Kitty Terminal Light & Dark Theme Harmony & High Contrast
+- **Files:**
+  - `~/.config/quickshell/ii/scripts/colors/terminal/scheme-base.json`
+  - `~/.config/quickshell/ii/scripts/colors/generate_colors_material.py`
+  - `~/.config/quickshell/ii/scripts/colors/terminal/kitty-theme.conf`
+  - `~/.config/quickshell/ii/scripts/colors/terminal/sequences.txt`
+  - `~/.config/quickshell/ii/scripts/colors/applycolor.sh`
+  - `~/.config/kitty/kitty.conf`
+- **Features:**
+  - Complete overhaul of light-mode terminal ANSI base colors to eliminate low-contrast neon pastels and invisible text.
+  - Guarantees ANSI Black (Color 0) in light mode is dark charcoal (`#1A1723`), providing >10:1 contrast against light backgrounds.
+  - Re-maps Color 15 (Bright White) in light mode to `onSurfaceVariant` (`#4A4358`), ensuring commands outputting bright white text are readable.
+  - ANSI tones dynamically clamped between 22 and 45 in light mode (guaranteeing minimum 5.5:1 contrast) and 65 to 85 in dark mode.
+  - Replaces slow, race-prone 76-iteration backgrounded `sed` loops in `applycolor.sh` with an atomic Python template generation script (~15ms execution time).
+  - Automatically cleans up conflicting `~/.config/kitty/*.auto.conf` files that previously overrode the dynamic Material You theme.
+
+### 16. GTK 3, GTK 4, xsettingsd & Qt/KDE Two-Way Theme Synchronization
+- **Files:**
+  - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
+  - `~/.config/gtk-3.0/settings.ini`
+  - `~/.config/gtk-4.0/settings.ini`
+  - `~/.config/xsettingsd/xsettingsd.conf`
+  - `~/.config/matugen/templates/gtk-4.0/gtk.css`
+  - `~/.config/matugen/templates/hyprland/colors.lua`
+- **Features:**
+  - Synchronizes `gsettings`, `dconf`, `~/.config/gtk-3.0/settings.ini`, `~/.config/gtk-4.0/settings.ini`, and `~/.config/xsettingsd/xsettingsd.conf` simultaneously upon theme switches.
+  - Seamlessly applies `adw-gtk3` (`gtk-application-prefer-dark-theme=0`) in light mode and `adw-gtk3-dark` (`gtk-application-prefer-dark-theme=1`) in dark mode.
+  - Fixes GTK4 CSS `:insensitive` pseudo-class error by upgrading to `:disabled`.
+  - Fixes Hyprland desktop background template in Matugen to use `surface.default` instead of hardcoded `.dark`.
+
 ---
 
 ## 🗂 Directory Structure
@@ -159,11 +189,16 @@ dots-customizations/
 ├── restore-original-upstream.sh   # Revert to clean official upstream state
 ├── configs/                       # Raw customized configuration files
 │   ├── .config/
+│   │   ├── gtk-3.0/               # GTK 3 settings.ini
+│   │   ├── gtk-4.0/               # GTK 4 settings.ini
 │   │   ├── hypr/                  # Hyprland & HyprMod configs
-│   │   ├── illogical-impulse/     # Screen snip configs
-│   │   ├── quickshell/            # Quickshell UI mods
+│   │   ├── illogical-impulse/     # Screen snip & tray configs
+│   │   ├── kitty/                 # Kitty config
+│   │   ├── matugen/               # Matugen color templates
+│   │   ├── quickshell/            # Quickshell UI mods & color scripts
 │   │   ├── satty/                 # Satty config
-│   │   └── swappy/                # Swappy config
+│   │   ├── swappy/                # Swappy config
+│   │   └── xsettingsd/            # Xsettingsd conf
 │   └── hyprmod/
 │       └── monitor_preview.py      # HyprMod python bug fix
 ├── patches/                        # Unified diffs against upstream

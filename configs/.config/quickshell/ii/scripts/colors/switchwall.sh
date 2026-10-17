@@ -36,13 +36,45 @@ handle_kde_material_you_colors() {
 
 pre_process() {
     local mode_flag="$1"
-    # Set GNOME color-scheme if mode_flag is dark or light
+    local gtk_theme=""
+    local color_scheme=""
+    local prefer_dark="0"
+
     if [[ "$mode_flag" == "dark" ]]; then
-        gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-        gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
-    elif [[ "$mode_flag" == "light" ]]; then
-        gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
-        gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3'
+        color_scheme='prefer-dark'
+        gtk_theme='adw-gtk3-dark'
+        prefer_dark="1"
+    else
+        color_scheme='prefer-light'
+        gtk_theme='adw-gtk3'
+        prefer_dark="0"
+    fi
+
+    # 1. Set GNOME / GTK desktop interface in gsettings and dconf
+    gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+    dconf write /org/gnome/desktop/interface/color-scheme "'$color_scheme'" 2>/dev/null || true
+    dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'" 2>/dev/null || true
+
+    # 2. Update GTK-3.0 settings.ini
+    mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"
+    if [ -f "$XDG_CONFIG_HOME/gtk-3.0/settings.ini" ]; then
+        sed -i -E "s/^(gtk-theme-name=).*/\1$gtk_theme/" "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
+        sed -i -E "s/^(gtk-application-prefer-dark-theme=).*/\1$prefer_dark/" "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
+    fi
+
+    # 3. Update GTK-4.0 settings.ini
+    mkdir -p "$XDG_CONFIG_HOME/gtk-4.0"
+    if [ -f "$XDG_CONFIG_HOME/gtk-4.0/settings.ini" ]; then
+        sed -i -E "s/^(gtk-theme-name=).*/\1$gtk_theme/" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
+        sed -i -E "s/^(gtk-application-prefer-dark-theme=).*/\1$prefer_dark/" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
+    fi
+
+    # 4. Update xsettingsd configuration
+    mkdir -p "$XDG_CONFIG_HOME/xsettingsd"
+    if [ -f "$XDG_CONFIG_HOME/xsettingsd/xsettingsd.conf" ]; then
+        sed -i -E "s/^(Net\/ThemeName\s+).*/\1\"$gtk_theme\"/" "$XDG_CONFIG_HOME/xsettingsd/xsettingsd.conf"
+        killall -HUP xsettingsd 2>/dev/null || true
     fi
 
     if [ ! -d "$CACHE_DIR"/user/generated ]; then
