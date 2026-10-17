@@ -15,7 +15,17 @@ Item { // Bar content region
     property var screen: root.QsWindow.window?.screen
     property var brightnessMonitor: Brightness.getMonitorForScreen(screen)
     property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen?.width) ? 2 : (Appearance.sizes.barShortenScreenWidthThreshold >= screen?.width) ? 1 : 0
-    readonly property int centerSideModuleWidth: (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened : (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : Appearance.sizes.barCenterSideModuleWidth
+    
+    // Dynamic responsive width: keeps original layout positions but automatically adjusts downward when crowded to prevent overlaps
+    readonly property real rightSideNeededWidth: rightSectionRowLayout.implicitWidth
+    readonly property real leftSideNeededWidth: leftSectionRowLayout.implicitWidth
+    readonly property real maxAvailableCenterSideWidth: Math.max(120, Math.floor((root.width - middleCenterGroup.implicitWidth - 2 * Math.max(rightSideNeededWidth, leftSideNeededWidth) - 24) / 2))
+    readonly property int defaultCenterSideWidth: (useShortenedForm == 2)
+        ? Appearance.sizes.barCenterSideModuleWidthHellaShortened
+        : (useShortenedForm == 1)
+            ? Appearance.sizes.barCenterSideModuleWidthShortened
+            : Appearance.sizes.barCenterSideModuleWidth
+    readonly property int centerSideModuleWidth: Math.min(defaultCenterSideWidth, maxAvailableCenterSideWidth)
 
     component VerticalBarSeparator: Rectangle {
         Layout.topMargin: Appearance.sizes.baseBarHeight / 3
@@ -113,6 +123,10 @@ Item { // Bar content region
             anchors.verticalCenter: parent.verticalCenter
             implicitWidth: root.centerSideModuleWidth
 
+            Behavior on implicitWidth {
+                NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            }
+
             Resources {
                 alwaysShowAllResources: root.useShortenedForm === 2
                 Layout.fillWidth: root.useShortenedForm === 2
@@ -160,6 +174,10 @@ Item { // Bar content region
             implicitWidth: root.centerSideModuleWidth
             implicitHeight: rightCenterGroupContent.implicitHeight
 
+            Behavior on implicitWidth {
+                NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            }
+
             onPressed: {
                 GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
             }
@@ -169,13 +187,13 @@ Item { // Bar content region
                 anchors.fill: parent
 
                 ClockWidget {
-                    showDate: (Config.options.bar.verbose && root.useShortenedForm < 2)
+                    showDate: (Config.options.bar.verbose && root.useShortenedForm < 2 && root.centerSideModuleWidth >= 180)
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
                 }
 
                 UtilButtons {
-                    visible: (Config.options.bar.verbose && root.useShortenedForm === 0)
+                    visible: (Config.options.bar.verbose && root.useShortenedForm === 0 && root.centerSideModuleWidth >= 240)
                     Layout.alignment: Qt.AlignVCenter
                 }
 

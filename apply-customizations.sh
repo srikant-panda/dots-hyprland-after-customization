@@ -139,5 +139,7 @@ echo " 10. Hyprland: Scratchpad window retrieval keybinds (SUPER+ALT+B, etc.)."
 echo " 11. Wallpapers: Video/Motion wallpaper support in Quickshell picker & switchwall."
 echo " 12. Hardware: USB Device Plug & Unplug notifier daemon (handle_usb.py)."
 echo " 13. KDE Connect: File transfer and sharing status windows always open floating and centered."
+echo " 14. Top Bar: Windows-style collapsible System Tray with animated chevron arrow and pin/unpin."
+echo " 15. Top Bar: Responsive dynamic spacing preventing widget overlap and icon collisions."
 echo "===================================================================="
 

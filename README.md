@@ -136,6 +136,18 @@ bash ~/dots-customizations/apply-customizations.sh
   - Prevents transfer progress dialogs from tiling across workspaces or squishing open windows.
   - Works consistently whether sending files to or receiving files from paired devices (e.g. phones).
 
+### 14. Windows-Style System Tray & Top Bar Responsive Layout
+- **Files:**
+  - `~/.config/quickshell/ii/modules/ii/bar/SysTray.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/SysTrayOverflowPopup.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/BarContent.qml`
+  - `~/.config/quickshell/ii/services/TrayService.qml`
+  - `~/.config/illogical-impulse/config.json`
+- **Features:**
+  - **Windows-Style Chevron Arrow (`v` / `^`):** Unpinned running background applications are grouped neatly behind an animated chevron arrow on the top bar. Clicking the downward chevron flips it upward with a smooth 180° rotation and presents a Material Design 3 grid popup.
+  - **App Pinning System:** Hover over any app in the overflow popup and click the push-pin icon to pin it directly to the top bar. Right-click or toggle to unpin and return it to the hidden tray. Pinned preferences persist cleanly in `config.json`.
+  - **Automatic Responsiveness & Overlap Elimination:** Bar modules dynamically adjust their width bounds based on available screen space and number of open widgets, preventing utility buttons, clock, battery pills, and tray apps from ever colliding or overlapping.
+
 ---
 
 ## 🗂 Directory Structure
