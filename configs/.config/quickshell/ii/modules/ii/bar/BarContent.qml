@@ -18,7 +18,7 @@ Item { // Bar content region
     
     // Dynamic responsive width: keeps original layout positions but automatically adjusts downward when crowded to prevent overlaps
     readonly property real rightSideNeededWidth: rightSectionRowLayout.implicitWidth
-    readonly property real leftSideNeededWidth: leftSectionRowLayout.implicitWidth
+    readonly property real leftSideNeededWidth: Math.min(280, leftSectionRowLayout.implicitWidth)
     readonly property real maxAvailableCenterSideWidth: Math.max(120, Math.floor((root.width - middleCenterGroup.implicitWidth - 2 * Math.max(rightSideNeededWidth, leftSideNeededWidth) - 24) / 2))
     readonly property int defaultCenterSideWidth: (useShortenedForm == 2)
         ? Appearance.sizes.barCenterSideModuleWidthHellaShortened
@@ -102,7 +102,8 @@ Item { // Bar content region
             ActiveWindow {
                 Layout.leftMargin: 10 + (leftSidebarButton.visible ? 0 : Appearance.rounding.screenRounding)
                 Layout.rightMargin: Appearance.rounding.screenRounding
-                Layout.fillWidth: true
+                Layout.fillWidth: false
+                Layout.maximumWidth: 240
                 Layout.fillHeight: true
                 visible: root.useShortenedForm === 0
             }

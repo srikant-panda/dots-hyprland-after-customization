@@ -150,5 +150,6 @@ echo " 14. Top Bar: Windows-style collapsible System Tray with animated chevron 
 echo " 15. Top Bar: Responsive dynamic spacing preventing widget overlap and icon collisions."
 echo " 16. Terminal Theming: Dynamic Kitty & ANSI 16 color harmony for Light & Dark modes with full WCAG contrast."
 echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GTK 4, xsettingsd, and Qt/KDE."
+echo " 18. Top Bar: Variable-length title truncation (...) and responsive center module stability."
 echo "===================================================================="
 

@@ -178,6 +178,15 @@ bash ~/dots-customizations/apply-customizations.sh
   - Fixes GTK4 CSS `:insensitive` pseudo-class error by upgrading to `:disabled`.
   - Fixes Hyprland desktop background template in Matugen to use `surface.default` instead of hardcoded `.dark`.
 
+### 17. Top Bar Title Truncation (`...`) & Responsive Geometry Protection
+- **Files:**
+  - `~/.config/quickshell/ii/modules/ii/bar/ActiveWindow.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/BarContent.qml`
+- **Features:**
+  - **Dynamic Title Truncation:** Automatically truncates active window titles exceeding 28 characters with a clean ellipsis (`...`), keeping bar titles concise and legible.
+  - **Bounded Implicit Width:** Restricts `ActiveWindow.qml` `maxWidth` and `implicitWidth` to a safe fraction of screen width (max 240px), preventing runaway text lengths from inflating layout size.
+  - **Center Module Stability:** Caps `leftSideNeededWidth` in `BarContent.qml` to 280px. This completely eliminates the runaway feedback loop where long webpage/app titles crushed `centerSideModuleWidth` down to 120px, ensuring Media player, Clock full date, and UtilButtons never collapse or disappear, and Workspaces pill remains perfectly centered.
+
 ---
 
 ## 🗂 Directory Structure
