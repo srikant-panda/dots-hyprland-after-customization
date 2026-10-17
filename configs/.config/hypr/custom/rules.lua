@@ -1,5 +1,15 @@
--- Silently handle KDE Connect URL/file sharing handler offscreen so no window pops up
+-- KDE Connect file transfer progress and URL/sharing status windows (always open in floating window)
 hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.handler)$" }, float = true})
-hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.handler)$" }, no_initial_focus = true})
-hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.handler)$" }, move = {999999, 999999}})
-hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.handler)$" }, size = {0, 0}})
+hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.handler)$" }, center = true})
+
+hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.daemon)$" }, float = true})
+hl.window_rule({match = {class = "^(org\\.kde\\.kdeconnect\\.daemon)$" }, center = true})
+
+hl.window_rule({match = {class = "^(kdeconnectd)$" }, float = true})
+hl.window_rule({match = {class = "^(kdeconnectd)$" }, center = true})
+
+-- KDE / KIO file transfer progress dialogs (whether sending or getting files)
+hl.window_rule({match = {title = ".*(Progress Dialog).*" }, float = true})
+hl.window_rule({match = {title = ".*(Progress Dialog).*" }, center = true})
+hl.window_rule({match = {title = "^(KDE Connect).*$" }, float = true})
+hl.window_rule({match = {title = "^(KDE Connect).*$" }, center = true})

@@ -129,6 +129,13 @@ bash ~/dots-customizations/apply-customizations.sh
   - Formats clean device names and chooses appropriate icons (`drive-removable-media-usb`, `input-mouse`, `audio-card`).
   - Restores the missing USB plug/unplug notification functionality that was lost when transitioning away from KDE Plasma.
 
+### 13. KDE Connect File Transfer Floating Windows
+- **File:** `~/.config/hypr/custom/rules.lua`
+- **Features:**
+  - Configures all KDE Connect file transfer progress and sharing status dialogs (`org.kde.kdeconnect.handler`, `org.kde.kdeconnect.daemon`, `kdeconnectd`, `Progress Dialog`) to always open as centered floating windows.
+  - Prevents transfer progress dialogs from tiling across workspaces or squishing open windows.
+  - Works consistently whether sending files to or receiving files from paired devices (e.g. phones).
+
 ---
 
 ## 🗂 Directory Structure
