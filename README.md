@@ -271,6 +271,21 @@ bash ~/dots-customizations/apply-customizations.sh
     - Fixed upstream `filterDuplicatePlayers` bug where negative position differences merged distinct applications.
     - Fixed `MprisController.players` reactivity so new and closed media sources update immediately.
 
+### 22. Integrated Terminal Isolation for Electron Code Editors (VS Code, Kiro, ZCode, Cursor, Windsurf)
+- **Scanned & Supported Editors:**
+  - Visual Studio Code (`/usr/bin/code`, `visual-studio-code-bin`)
+  - Kiro IDE (`/usr/bin/kiro`, `kiro-ide`)
+  - ZCode (`/usr/bin/zcode`, `zcode`)
+  - Cursor, Windsurf, VSCodium, Positron (generic detection)
+- **Files:**
+  - `~/.bashrc`
+  - `~/.config/fish/config.fish`
+  - `~/.config/quickshell/ii/scripts/colors/applycolor.sh`
+- **Features:**
+  - **Theming Isolation:** Integrated terminals in Electron code editors remain dedicated to the editor's active color theme rather than turning bright white or adopting dynamic desktop wallpaper colors.
+  - **Dynamic PTS Detection in `applycolor.sh`:** Updated `apply_anyterm` with an `is_editor_pts()` inspector that scans process ancestry and environment variables (`VSCODE_INJECTION`, `VSCODE_PID`, `ZCODE_PID`, `TERM_PROGRAM`). Standalone terminals (Kitty, Foot, etc.) continue to receive dynamic wallpaper palettes, while editor pseudoterminals receive OSC reset sequences (`\033]110\033\\\033]111\033\\\033]112\033\\\033]104\033\\`) to maintain editor color fidelity.
+  - **Fish & Bash Startup Guards:** Added editor terminal detection to both `config.fish` and `~/.bashrc` that clears inherited session `COLORFGBG` and `GLAMOUR_STYLE` variables, bypasses dynamic sequences ingestion, and issues an OSC reset on launch.
+
 ---
 
 
@@ -282,7 +297,9 @@ dots-customizations/
 ├── apply-customizations.sh        # 1-click restore script
 ├── restore-original-upstream.sh   # Revert to clean official upstream state
 ├── configs/                       # Raw customized configuration files
+│   ├── .bashrc                    # Bash profile with editor terminal isolation
 │   ├── .config/
+│   │   ├── fish/                  # Fish config with editor terminal isolation
 │   │   ├── gtk-3.0/               # GTK 3 settings.ini
 │   │   ├── gtk-4.0/               # GTK 4 settings.ini
 │   │   ├── hypr/                  # Hyprland & HyprMod configs

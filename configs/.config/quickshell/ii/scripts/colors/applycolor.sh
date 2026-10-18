@@ -72,15 +72,54 @@ apply_kitty() {
   fi
 }
 
+is_editor_pts() {
+  local pts="$1"
+  local pids
+  pids=$(fuser "$pts" 2>/dev/null)
+  if [ -z "$pids" ]; then
+    pids=$(ps -t "pts/${pts##*/}" -o pid= 2>/dev/null)
+  fi
+  [ -z "$pids" ] && return 1
+
+  for pid in $pids; do
+    if [ -r "/proc/$pid/environ" ]; then
+      if tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | grep -qE '^(VSCODE_|ZCODE_|ELECTRON_RUN_AS_NODE|TERM_PROGRAM=(vscode|kiro|cursor|windsurf|codium|zcode|positron))'; then
+        return 0
+      fi
+    fi
+
+    local cur_pid="$pid"
+    for ((i=0; i<4; i++)); do
+      [ -z "$cur_pid" ] || [ "$cur_pid" -le 1 ] && break
+      local comm cmdline ppid
+      comm=$(cat "/proc/$cur_pid/comm" 2>/dev/null || true)
+      cmdline=$(cat "/proc/$cur_pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)
+      ppid=$(awk '{print $4}' "/proc/$cur_pid/stat" 2>/dev/null || true)
+
+      if echo "$comm $cmdline" | grep -iqE '(code|kiro|zcode|cursor|windsurf|codium|ptyhost|electron)'; then
+        if ! echo "$comm" | grep -iqE '(agy|grep)'; then
+          return 0
+        fi
+      fi
+      cur_pid="$ppid"
+    done
+  done
+  return 1
+}
+
 apply_anyterm() {
   local seq_file="$STATE_DIR/user/generated/terminal/sequences.txt"
-  if [ -f "$seq_file" ]; then
-    for file in /dev/pts/*; do
-      if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
+  for file in /dev/pts/*; do
+    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
+      if is_editor_pts "$file"; then
+        # Inside editor terminal: restore editor's default theme (reset OSC 110, 111, 112, 104)
+        printf '\033]110\033\\\033]111\033\\\033]112\033\\\033]104\033\\' >"$file" 2>/dev/null || true
+      elif [ -f "$seq_file" ]; then
+        # Standalone terminal: apply OS dynamic color scheme
         cat "$seq_file" >"$file" 2>/dev/null || true
       fi
-    done
-  fi
+    fi
+  done
 }
 
 apply_term() {

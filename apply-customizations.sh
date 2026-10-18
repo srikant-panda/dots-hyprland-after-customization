@@ -31,6 +31,9 @@ for item in quickshell/ii hypr illogical-impulse satty swappy matugen kitty gtk-
         cp -a "$HOME/.config/$item" "$BACKUP_DIR/$item"
     fi
 done
+if [ -f "$HOME/.bashrc" ]; then
+    cp -a "$HOME/.bashrc" "$BACKUP_DIR/.bashrc"
+fi
 
 # 2. Copy all customized config files
 echo "[2/6] Applying custom configuration files..."
@@ -39,6 +42,9 @@ if [ -L "$HOME/.config/gtk-4.0/gtk.css" ]; then
     rm -f "$HOME/.config/gtk-4.0/gtk.css"
 fi
 cp -rv "$CONFIGS_SRC"/* "$HOME/.config/"
+if [ -f "$SCRIPT_DIR/configs/.bashrc" ]; then
+    cp -f "$SCRIPT_DIR/configs/.bashrc" "$HOME/.bashrc"
+fi
 rm -f "$HOME/.config/kitty"/*.auto.conf 2>/dev/null || true
 
 # 3. Check and configure screenshot tools
@@ -188,5 +194,6 @@ echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GT
 echo " 18. Top Bar: Variable-length title truncation (...) and responsive center module stability."
 echo " 19. Cursor Configuration: Uniform Adwaita default with HyprMod multi-layer live syncing (Hyprland, GTK 3/4, xsettingsd, XDG)."
 echo " 20. Smooth Theme Switching: Instant, rigid optimistic toggle with concurrency locking and smooth QtQuick color transitions."
+echo " 21. Electron Code Editors: Isolated integrated terminals (VS Code, Kiro, ZCode, Cursor, Windsurf, etc.) from OS dynamic OSC escape sequences and COLORFGBG overrides across Fish and Bash."
 echo "===================================================================="
 
