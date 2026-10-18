@@ -125,19 +125,7 @@ Variants {
         }
 
         Item {
-            id: backgroundContent
             anchors.fill: parent
-            transformOrigin: Item.Center
-
-            scale: MaterialThemeLoader.isTransitioning ? 0.96 : 1.0
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: MaterialThemeLoader.isTransitioning ? 250 : 500
-                    easing.type: MaterialThemeLoader.isTransitioning ? Easing.OutCubic : Easing.OutBack
-                    easing.overshoot: 1.15
-                }
-            }
 
             // Wallpaper
             StyledImage {

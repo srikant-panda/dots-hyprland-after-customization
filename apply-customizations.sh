@@ -187,6 +187,6 @@ echo " 16. Terminal Theming: Dynamic Kitty & ANSI 16 color harmony for Light & D
 echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GTK 4, xsettingsd, and Qt/KDE."
 echo " 18. Top Bar: Variable-length title truncation (...) and responsive center module stability."
 echo " 19. Cursor Configuration: Uniform Adwaita default with HyprMod multi-layer live syncing (Hyprland, GTK 3/4, xsettingsd, XDG)."
-echo " 20. Dark/Light Mode Switching: Zoom-out icon swap & bounce, desktop camera zoom-out depth effect, non-blocking veil, and instant rigid synchronization between Top Bar and Quick Settings."
+echo " 20. Expanding Light-Orb Circular Reveal: Sub-50ms parallel grim snapshot, expanding circular aperture revealing live desktop, multi-layer glowing light-orb ring, and multi-monitor geometry."
 echo "===================================================================="
 

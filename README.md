@@ -217,12 +217,15 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Standard Grayscale 256-Color Restoration:** Removed unused overrides for colors 232–234, 236–239, 248–251, 253–254 from `kitty-theme.conf` and `sequences.txt`, which previously corrupted standard 256-color grayscale into pure white (`#FFFFFF`) and pale pink in light mode.
   - **Universal Terminal Mode Environment (`COLORFGBG` & `GLAMOUR_STYLE`):** Updated `switchwall.sh` to dynamically export `COLORFGBG="0;15"` and `GLAMOUR_STYLE="light"` to Hyprland and persist to `colorfgbg.fish` for all fish shell sessions. CLI tools (like `agy`, `bat`, `glow`, `lipgloss`, `termenv`, `fzf`) automatically use high-contrast light themes instead of dark themes with faint yellow/cyan text.
 
-### 20. Smooth & Rigid Dark/Light Mode Switching System
+### 20. Expanding Light-Orb Circular Reveal Theme Transition
 - **Files:**
+  - `~/.config/quickshell/ii/scripts/colors/capture_snapshot.sh`
   - `~/.config/quickshell/ii/services/MaterialThemeLoader.qml`
   - `~/.config/quickshell/ii/modules/common/widgets/ThemeTransitionOverlay.qml`
+  - `~/.config/quickshell/ii/modules/common/Directories.qml`
   - `~/.config/quickshell/ii/modules/ii/bar/UtilButtons.qml`
   - `~/.config/quickshell/ii/modules/common/models/quickToggles/DarkModeToggle.qml`
+  - `~/.config/quickshell/ii/modules/ii/sidebarRight/quickToggles/androidStyle/AndroidQuickToggleButton.qml`
   - `~/.config/quickshell/ii/modules/common/widgets/LightDarkPreferenceButton.qml`
   - `~/.config/quickshell/ii/modules/settings/QuickConfig.qml`
   - `~/.config/quickshell/ii/shell.qml`
@@ -230,18 +233,17 @@ bash ~/dots-customizations/apply-customizations.sh
   - `~/.config/hypr/hyprland/rules.lua`
   - `~/.config/gtk-4.0/gtk.css`
 - **Features:**
-  - **Single Source of Truth (`MaterialThemeLoader`):** Centralized `toggleLightDark()` method with optimistic `targetDark` state update, eliminating delay between click and UI response. Both the top bar toggle button and quick settings toggle are bound to the identical state and flip simultaneously.
-  - **Zoom-out Transition Animations:**
-    - **Top Bar Util Button:** Replaced pinwheel rotation with a true zoom-out/zoom-in transition. On toggle, the existing icon zooms out (shrinks to 0 with `Easing.InBack`), swaps glyphs between sun and moon at zero size, and the new icon zooms in (springs from 0 to 1 with `Easing.OutBack` and a lively 1.4 bounce overshoot).
-    - **Quick Settings Android Toggle:** The icon compresses (zooms out to 0.65) on toggle and springs back to full size with `Easing.OutBack`.
-    - **Desktop & Wallpaper Zoom-out Depth (`Background.qml`):** During theme transitions (`isTransitioning`), the desktop wallpaper and widgets gently zoom out to `0.96` and smoothly glide back to `1.0`, creating a smooth camera pull-back depth sensation.
-  - **Screen Veil Transition Overlay (`ThemeTransitionOverlay.qml`):** Fullscreen non-blocking transition overlay across all monitors on `WlrLayer.Overlay` with `mask: Region { item: null }` (100% click-through) and a gentle scale zoom-out motion (1.06 -> 1.00) that softens palette changes.
-  - **Concurrency & Rigidity Guard:**
-    - **QML Debounce:** Rapid repeated clicks are filtered while a switch is in flight to prevent process spamming or race conditions.
-    - **Safety Timer:** 3.5s timeout automatically resets any transient switching states if an external process fails.
-    - **Process Lock (`flock`):** Exclusive non-blocking lock (`switchwall.lock`) prevents multiple simultaneous `switchwall.sh` executions from clobbering `colors.json` or corrupted configs.
-  - **Matugen Permission Fix:** Replaced root-owned symlink on `~/.config/gtk-4.0/gtk.css` with a standard user-writable file, eliminating `os error 13` crashes and ensuring Matugen executes in under 1 second.
-  - **Optimized Fast-Path (`--noswitch`):** Skips redundant wallpaper upscaling prompts and unnecessary mpvpaper restarts when merely toggling dark/light mode for the current background.
+  - **Expanding Light-Orb Circular Reveal Animation:**
+    - On toggling between dark and light themes, an instantaneous parallel screen snapshot (~40ms) is captured using `grim` across all active monitors.
+    - An overlay window on `WlrLayer.Overlay` displays the old screen snapshot with `mask: Region { item: null }` (100% click-through).
+    - An expanding circular aperture (cutout) animates outward from the mouse cursor or toggle button position over 550ms (`Easing.OutCubic`), smoothly peeling away the old desktop appearance to reveal the live newly themed desktop beneath it (wallpaper, status bar, and visible windows).
+    - An illuminated **light-orb ring** with multi-layer glowing auras outlines the expanding circular boundary (`#FFFFFF` for dark reveal, warm sun-gold `#FFE58F` for light reveal).
+    - **Multi-Monitor Geometry:** Relative screen coordinates and distance to the furthest corner (`maxRadius`) are calculated dynamically per-screen, guaranteeing seamless expansion across multiple displays without leaving uncovered corners or visual artifacts.
+  - **Single Source of Truth (`MaterialThemeLoader`):** Centralized `toggleLightDark()` orchestrates the snapshot capture, optimistic state changes, overlay animation, and background theme execution (`switchwall.sh --noswitch`).
+  - **Automatic Lifecycle & Cleanup:** Temporary snapshots in `/tmp/quickshell/media/theme_snapshots/` are automatically deleted immediately once the 550ms animation finishes.
+  - **Fail-safe Fallback:** If `grim` is missing or snapshot capture fails, the system automatically falls back to an immediate direct theme toggle without interruption.
+  - **Optimized Fast-Path & Locking:** Process locking (`flock -n 200`) on `/tmp/switchwall.lock` prevents concurrent race conditions, while `--noswitch` skips redundant mpvpaper restarts and monitor upscale checks.
+  - **Matugen Permission Fix:** User-writable `~/.config/gtk-4.0/gtk.css` eliminates `os error 13` crashes.
 
 ---
 

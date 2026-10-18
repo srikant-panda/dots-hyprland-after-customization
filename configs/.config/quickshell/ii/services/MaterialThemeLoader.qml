@@ -17,7 +17,13 @@ Singleton {
 
     property bool targetDark: Appearance.m3colors.darkmode
     property bool isSwitching: false
-    property bool isTransitioning: false
+
+    // Circular reveal properties
+    property bool revealActive: false
+    property real revealOriginX: 960
+    property real revealOriginY: 540
+    property real revealProgress: 0.0
+    property string snapshotTimestamp: ""
 
     function reapplyTheme() {
         themeFileView.reload()
@@ -62,16 +68,6 @@ Singleton {
     }
 
     Timer {
-        id: transitionFadeTimer
-        interval: 650
-        repeat: false
-        running: false
-        onTriggered: {
-            root.isTransitioning = false
-        }
-    }
-
-    Timer {
         id: switchingSafetyTimeout
         interval: 3500
         repeat: false
@@ -79,7 +75,7 @@ Singleton {
         onTriggered: {
             root.isSwitching = false
             root.targetDark = Appearance.m3colors.darkmode
-            root.isTransitioning = false
+            root.revealActive = false
         }
     }
 
@@ -93,7 +89,7 @@ Singleton {
         }
     }
 
-	FileView { 
+    FileView { 
         id: themeFileView
         path: Qt.resolvedUrl(root.filePath)
         watchChanges: true
@@ -108,24 +104,81 @@ Singleton {
         onLoadFailed: root.resetFilePathNextTime();
     }
 
+    // NumberAnimation for circular reveal expansion (550ms OutCubic)
+    NumberAnimation {
+        id: revealAnim
+        target: root
+        property: "revealProgress"
+        from: 0.0
+        to: 1.0
+        duration: 550
+        easing.type: Easing.OutCubic
+        onFinished: {
+            root.revealActive = false
+            // Clean up temporary snapshots in background
+            Quickshell.execDetached(["rm", "-rf", "/tmp/quickshell/media/theme_snapshots"]);
+        }
+    }
+
+    // Process to capture sub-50ms snapshot of screen before switching
+    Process {
+        id: captureSnapshotProc
+        property bool pendingForceDark: false
+        property bool hasPendingForceDark: false
+        command: [Directories.captureSnapshotScriptPath]
+        stdout: StdioCollector {
+            id: snapshotOutputCollector
+            onStreamFinished: {
+                try {
+                    const text = snapshotOutputCollector.text.trim();
+                    const json = JSON.parse(text);
+                    if (json.x !== undefined && json.y !== undefined) {
+                        root.revealOriginX = json.x;
+                        root.revealOriginY = json.y;
+                    }
+                    if (json.ts) {
+                        root.snapshotTimestamp = json.ts;
+                    }
+                } catch (e) {
+                    console.log("[MaterialThemeLoader] Snapshot parse info:", e);
+                }
+            }
+        }
+        onExited: (exitCode) => {
+            const nextDark = captureSnapshotProc.hasPendingForceDark ? captureSnapshotProc.pendingForceDark : !root.targetDark;
+            root.targetDark = nextDark;
+
+            if (exitCode === 0 && root.snapshotTimestamp !== "") {
+                root.revealProgress = 0.0;
+                root.revealActive = true;
+                revealAnim.restart();
+            } else {
+                root.revealActive = false;
+            }
+
+            // Execute theme change behind the overlay
+            Quickshell.execDetached([
+                Directories.wallpaperSwitchScriptPath,
+                "--mode", nextDark ? "dark" : "light",
+                "--noswitch"
+            ]);
+        }
+    }
+
     function toggleLightDark(forceDark) {
-        if (root.isSwitching) {
-            // Prevent launching concurrent switchwall processes while one is in flight
+        if (root.isSwitching || captureSnapshotProc.running) {
             return;
         }
 
-        const nextDark = (forceDark !== undefined) ? forceDark : !root.targetDark;
-        root.targetDark = nextDark;
         root.isSwitching = true;
-        root.isTransitioning = true;
         switchingSafetyTimeout.restart();
-        transitionFadeTimer.restart();
 
-        Quickshell.execDetached([
-            Directories.wallpaperSwitchScriptPath,
-            "--mode", nextDark ? "dark" : "light",
-            "--noswitch"
-        ]);
+        captureSnapshotProc.hasPendingForceDark = (forceDark !== undefined);
+        if (forceDark !== undefined) {
+            captureSnapshotProc.pendingForceDark = forceDark;
+        }
+
+        captureSnapshotProc.running = true;
     }
 
     GlobalShortcut {
