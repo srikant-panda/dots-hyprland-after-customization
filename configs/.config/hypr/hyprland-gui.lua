@@ -20,7 +20,7 @@ hl.config({
         gaps_out = 3,
     },
     input = {
-        sensitivity = 0.3,
+        sensitivity = 0.8,
         touchpad = {
             middle_button_emulation = true,
         },
@@ -33,14 +33,6 @@ hl.config({
 })
 
 -- Monitors
-hl.monitor({
-    output = "HDMI-A-1",
-    disabled = false,
-    mode = "1366x768@59.79Hz",
-    position = "320x-768",
-    scale = 1,
-    cm = "srgb",
-})
 hl.monitor({
     output = "desc:Chimei Innolux Corporation 0x142B",
     disabled = false,

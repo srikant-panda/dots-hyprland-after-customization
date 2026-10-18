@@ -72,6 +72,23 @@ if command -v python3 >/dev/null 2>&1; then
         done
     fi
 
+    # Patch hyprmod cursor.py (GTK/XDG/xsettingsd synchronization fix)
+    for p in $HYPRMOD_PATHS; do
+        TARGET_FILE="$p/hyprmod/pages/cursor.py"
+        if [ -f "$TARGET_FILE" ] && [ -w "$TARGET_FILE" ]; then
+            echo "      Patching $TARGET_FILE for GTK/XDG cursor syncing..."
+            cp -f "$SCRIPT_DIR/configs/hyprmod/cursor.py" "$TARGET_FILE"
+            break
+        fi
+    done
+    for target in "$HOME"/.local/lib/python*/site-packages/hyprmod/pages/cursor.py; do
+        if [ -f "$target" ]; then
+            echo "      Patching $target for GTK/XDG cursor syncing..."
+            cp -f "$SCRIPT_DIR/configs/hyprmod/cursor.py" "$target"
+            break
+        fi
+    done
+
     # Patch hyprland_monitors (Unmirror bug fix)
     for p in $HYPRMOD_PATHS; do
         TARGET_FILE="$p/hyprland_monitors/monitors.py"
@@ -89,6 +106,20 @@ if command -v python3 >/dev/null 2>&1; then
         fi
     done
 fi
+
+# Ensure default cursor theme is synchronized across XDG, X11, and GTK
+mkdir -p "$HOME/.icons/default" "$HOME/.local/share/icons/default"
+cat << 'EOF' > "$HOME/.local/share/icons/default/index.theme"
+[Icon Theme]
+Name=Default
+Comment=Default Cursor Theme
+Inherits=Adwaita
+EOF
+cp -f "$HOME/.local/share/icons/default/index.theme" "$HOME/.icons/default/index.theme"
+gsettings set org.gnome.desktop.interface cursor-theme 'Adwaita' 2>/dev/null || true
+gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
+dconf write /org/gnome/desktop/interface/cursor-theme "'Adwaita'" 2>/dev/null || true
+dconf write /org/gnome/desktop/interface/cursor-size 24 2>/dev/null || true
 
 # Ensure custom scripts are executable
 chmod +x "$HOME/.config/hypr/custom/scripts"/*.py "$HOME/.config/hypr/custom/scripts"/*.sh "$HOME/.config/quickshell/ii/scripts/colors"/*.sh 2>/dev/null || true
@@ -151,5 +182,6 @@ echo " 15. Top Bar: Responsive dynamic spacing preventing widget overlap and ico
 echo " 16. Terminal Theming: Dynamic Kitty & ANSI 16 color harmony for Light & Dark modes with full WCAG contrast."
 echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GTK 4, xsettingsd, and Qt/KDE."
 echo " 18. Top Bar: Variable-length title truncation (...) and responsive center module stability."
+echo " 19. Cursor Configuration: Uniform Adwaita default with HyprMod multi-layer live syncing (Hyprland, GTK 3/4, xsettingsd, XDG)."
 echo "===================================================================="
 

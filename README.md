@@ -187,6 +187,20 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Bounded Implicit Width:** Restricts `ActiveWindow.qml` `maxWidth` and `implicitWidth` to a safe fraction of screen width (max 240px), preventing runaway text lengths from inflating layout size.
   - **Center Module Stability:** Caps `leftSideNeededWidth` in `BarContent.qml` to 280px. This completely eliminates the runaway feedback loop where long webpage/app titles crushed `centerSideModuleWidth` down to 120px, ensuring Media player, Clock full date, and UtilButtons never collapse or disappear, and Workspaces pill remains perfectly centered.
 
+### 18. Default Cursor (Adwaita) & HyprMod Multi-Layer Persistence Fix
+- **Files:**
+  - `~/.config/hypr/hyprland/execs.lua`
+  - `~/.config/gtk-3.0/settings.ini`
+  - `~/.config/gtk-4.0/settings.ini`
+  - `~/.config/xsettingsd/xsettingsd.conf`
+  - `~/.local/share/icons/default/index.theme`
+  - `~/.icons/default/index.theme`
+  - `~/.local/lib/python3.14/site-packages/hyprmod/pages/cursor.py`
+- **Features:**
+  - **Dynamic Compositor Cursor:** Replaced hardcoded `Bibata-Modern-Classic` startup in `execs.lua` with dynamic evaluation (`hyprctl setcursor ${XCURSOR_THEME:-Adwaita} ${XCURSOR_SIZE:-24}`), allowing Hyprland to seamlessly adopt the theme chosen in HyprMod or environment without reverting on startup or reload.
+  - **Universal Adwaita Configuration:** Synchronized `Adwaita` (size 24) across all desktop subsystems: Hyprland environment, GNOME/GTK runtime (`gsettings` & `dconf`), GTK 3 & GTK 4 `settings.ini`, `xsettingsd.conf`, `nwg-look`, and XDG/X11 default icon theme indexes.
+  - **HyprMod Live Syncing Patch:** Enhanced HyprMod's cursor management page (`_apply_now`) to automatically write GTK 3/4 `settings.ini`, update and reload `xsettingsd`, and update fallback `index.theme` files in real-time whenever a cursor is picked in the UI. Cursors now persist permanently across all app types without reverting.
+
 ---
 
 ## 🗂 Directory Structure

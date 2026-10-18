@@ -19,6 +19,6 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("wl-paste --type text --watch bash -c 'if [ ! -f /tmp/cliphist_private_mode ]; then cliphist store && qs -c $qsConfig ipc call cliphistService update; fi'")
     hl.exec_cmd("wl-paste --type image --watch bash -c 'if [ ! -f /tmp/cliphist_private_mode ]; then cliphist store && qs -c $qsConfig ipc call cliphistService update; fi'")
 
-    -- Cursor
-    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
+    -- Cursor (dynamically uses XCURSOR_THEME/SIZE from HyprMod/environment, defaulting to Adwaita)
+    hl.exec_cmd("hyprctl setcursor ${XCURSOR_THEME:-Adwaita} ${XCURSOR_SIZE:-24}")
 end)
