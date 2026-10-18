@@ -42,6 +42,27 @@ handle_kde_material_you_colors() {
     "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
 }
 
+sync_ini_setting() {
+    local file="$1"
+    local section="$2"
+    local key="$3"
+    local value="$4"
+
+    mkdir -p "$(dirname "$file")"
+    if [ ! -f "$file" ]; then
+        printf "[%s]\n%s=%s\n" "$section" "$key" "$value" > "$file"
+        return
+    fi
+
+    if grep -q -E "^${key}=" "$file"; then
+        sed -i -E "s/^(${key}=).*/\1${value}/" "$file"
+    elif grep -q -E "^\[${section}\]" "$file"; then
+        sed -i -E "/^\[${section}\]/a ${key}=${value}" "$file"
+    else
+        printf "\n[%s]\n%s=%s\n" "$section" "$key" "$value" >> "$file"
+    fi
+}
+
 pre_process() {
     local mode_flag="$1"
     local gtk_theme=""
@@ -82,18 +103,12 @@ pre_process() {
     echo "export GLAMOUR_STYLE=\"$glamour_style\"" >> "$STATE_DIR/user/generated/terminal/colorfgbg.sh"
 
     # 2. Update GTK-3.0 settings.ini
-    mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"
-    if [ -f "$XDG_CONFIG_HOME/gtk-3.0/settings.ini" ]; then
-        sed -i -E "s/^(gtk-theme-name=).*/\1$gtk_theme/" "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
-        sed -i -E "s/^(gtk-application-prefer-dark-theme=).*/\1$prefer_dark/" "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
-    fi
+    sync_ini_setting "$XDG_CONFIG_HOME/gtk-3.0/settings.ini" "Settings" "gtk-theme-name" "$gtk_theme"
+    sync_ini_setting "$XDG_CONFIG_HOME/gtk-3.0/settings.ini" "Settings" "gtk-application-prefer-dark-theme" "$prefer_dark"
 
     # 3. Update GTK-4.0 settings.ini
-    mkdir -p "$XDG_CONFIG_HOME/gtk-4.0"
-    if [ -f "$XDG_CONFIG_HOME/gtk-4.0/settings.ini" ]; then
-        sed -i -E "s/^(gtk-theme-name=).*/\1$gtk_theme/" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
-        sed -i -E "s/^(gtk-application-prefer-dark-theme=).*/\1$prefer_dark/" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
-    fi
+    sync_ini_setting "$XDG_CONFIG_HOME/gtk-4.0/settings.ini" "Settings" "gtk-theme-name" "$gtk_theme"
+    sync_ini_setting "$XDG_CONFIG_HOME/gtk-4.0/settings.ini" "Settings" "gtk-application-prefer-dark-theme" "$prefer_dark"
 
     # 4. Update xsettingsd configuration
     mkdir -p "$XDG_CONFIG_HOME/xsettingsd"
