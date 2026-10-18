@@ -39,15 +39,21 @@ pre_process() {
     local gtk_theme=""
     local color_scheme=""
     local prefer_dark="0"
+    local colorfgbg=""
+    local glamour_style=""
 
     if [[ "$mode_flag" == "dark" ]]; then
         color_scheme='prefer-dark'
         gtk_theme='adw-gtk3-dark'
         prefer_dark="1"
+        colorfgbg="15;0"
+        glamour_style="dark"
     else
         color_scheme='prefer-light'
         gtk_theme='adw-gtk3'
         prefer_dark="0"
+        colorfgbg="0;15"
+        glamour_style="light"
     fi
 
     # 1. Set GNOME / GTK desktop interface in gsettings and dconf
@@ -55,6 +61,17 @@ pre_process() {
     gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
     dconf write /org/gnome/desktop/interface/color-scheme "'$color_scheme'" 2>/dev/null || true
     dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'" 2>/dev/null || true
+
+    # Export terminal environment variables for Wayland/Hyprland session
+    hyprctl setenv COLORFGBG "$colorfgbg" 2>/dev/null || true
+    hyprctl setenv GLAMOUR_STYLE "$glamour_style" 2>/dev/null || true
+
+    # Save to generated terminal env files for shells (fish, bash, etc.)
+    mkdir -p "$STATE_DIR/user/generated/terminal"
+    echo "set -gx COLORFGBG \"$colorfgbg\"" > "$STATE_DIR/user/generated/terminal/colorfgbg.fish"
+    echo "set -gx GLAMOUR_STYLE \"$glamour_style\"" >> "$STATE_DIR/user/generated/terminal/colorfgbg.fish"
+    echo "export COLORFGBG=\"$colorfgbg\"" > "$STATE_DIR/user/generated/terminal/colorfgbg.sh"
+    echo "export GLAMOUR_STYLE=\"$glamour_style\"" >> "$STATE_DIR/user/generated/terminal/colorfgbg.sh"
 
     # 2. Update GTK-3.0 settings.ini
     mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"

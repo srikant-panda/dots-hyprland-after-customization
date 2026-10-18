@@ -25,7 +25,7 @@ echo "[1/6] Created safety backup of current configs to:"
 echo "      $BACKUP_DIR"
 
 # Backup existing configs if present
-for item in quickshell/ii hypr illogical-impulse satty swappy matugen kitty gtk-3.0 gtk-4.0 xsettingsd; do
+for item in quickshell/ii hypr illogical-impulse satty swappy matugen kitty gtk-3.0 gtk-4.0 xsettingsd fish; do
     if [ -e "$HOME/.config/$item" ]; then
         mkdir -p "$BACKUP_DIR/$(dirname "$item")"
         cp -a "$HOME/.config/$item" "$BACKUP_DIR/$item"

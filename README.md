@@ -201,6 +201,22 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Universal Adwaita Configuration:** Synchronized `Adwaita` (size 24) across all desktop subsystems: Hyprland environment, GNOME/GTK runtime (`gsettings` & `dconf`), GTK 3 & GTK 4 `settings.ini`, `xsettingsd.conf`, `nwg-look`, and XDG/X11 default icon theme indexes.
   - **HyprMod Live Syncing Patch:** Enhanced HyprMod's cursor management page (`_apply_now`) to automatically write GTK 3/4 `settings.ini`, update and reload `xsettingsd`, and update fallback `index.theme` files in real-time whenever a cursor is picked in the UI. Cursors now persist permanently across all app types without reverting.
 
+### 19. Light Mode Terminal Text Visibility, Contrast & Rendering Enhancement
+- **Files:**
+  - `~/.config/kitty/kitty.conf`
+  - `~/.config/quickshell/ii/scripts/colors/generate_colors_material.py`
+  - `~/.config/quickshell/ii/scripts/colors/terminal/kitty-theme.conf`
+  - `~/.config/quickshell/ii/scripts/colors/terminal/sequences.txt`
+  - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
+  - `~/.config/fish/config.fish`
+- **Features:**
+  - **Background Preservation (Strict Constraint):** Keeps the terminal background (`term_bg` / OSC 11) 100% identical to the dynamic wallpaper palette without altering theme tints.
+  - **Kitty Text Composition Strategy (`text_composition_strategy 1.8 30`):** Fine-tunes FreeType font glyph composition and contrast curve in Kitty. Eliminates thin, spindly, washed-out glyph strokes on light backgrounds while keeping dark mode rendering unaffected.
+  - **High-Contrast Terminal Foreground (`term_fg` & `term15`):** Sets light-mode text foreground to deep charcoal near-black (`#121016`, tone ~6), providing high contrast (>13:1) on light surfaces.
+  - **Vibrant, High-Contrast ANSI Colors:** Clamps light-mode ANSI color tones to 18–28 range and preserves distinct base hues (Red `#8A0014`, Green `#004216`, Yellow/Amber `#5C3C00`, Blue `#00408A`, Magenta `#5414AF`, Cyan `#004A4F`, Slate Gray `#4B5563` for comments). Eliminates color collapse where yellow/red previously became blue or invisible.
+  - **Standard Grayscale 256-Color Restoration:** Removed unused overrides for colors 232–234, 236–239, 248–251, 253–254 from `kitty-theme.conf` and `sequences.txt`, which previously corrupted standard 256-color grayscale into pure white (`#FFFFFF`) and pale pink in light mode.
+  - **Universal Terminal Mode Environment (`COLORFGBG` & `GLAMOUR_STYLE`):** Updated `switchwall.sh` to dynamically export `COLORFGBG="0;15"` and `GLAMOUR_STYLE="light"` to Hyprland and persist to `colorfgbg.fish` for all fish shell sessions. CLI tools (like `agy`, `bat`, `glow`, `lipgloss`, `termenv`, `fzf`) automatically use high-contrast light themes instead of dark themes with faint yellow/cyan text.
+
 ---
 
 ## 🗂 Directory Structure

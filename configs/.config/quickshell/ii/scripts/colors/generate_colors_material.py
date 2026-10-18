@@ -141,7 +141,11 @@ if args.termscheme is not None:
 
     # Explicit terminal surface, foreground, cursor, and selection colors
     term_colors['term_bg'] = material_colors['surfaceContainerLow']
-    term_colors['term_fg'] = material_colors['onSurface']
+    if darkmode:
+        term_colors['term_fg'] = material_colors['onSurface']
+    else:
+        # High contrast deep charcoal near-black for crisp readability on light backgrounds
+        term_colors['term_fg'] = '#121016'
     term_colors['term_cursor'] = material_colors['primary']
     term_colors['selection_bg'] = material_colors['secondaryContainer']
     term_colors['selection_fg'] = material_colors['onSecondaryContainer']
@@ -154,21 +158,29 @@ if args.termscheme is not None:
             if darkmode:
                 harmonized = boost_chroma_tone(hex_to_argb(material_colors['surfaceContainerHighest']), 1.1, 0.9)
             else:
-                harmonized = boost_chroma_tone(hex_to_argb(material_colors['onSurface']), 1.2, 0.85)
+                harmonized = hex_to_argb('#1A1723')
         elif args.blend_bg_fg and color == "term15":
             if darkmode:
                 harmonized = boost_chroma_tone(hex_to_argb(material_colors['onSurface']), 1.5, 1.0)
             else:
-                harmonized = hex_to_argb(material_colors['onSurfaceVariant'])
+                # High contrast primary foreground text in light mode
+                harmonized = hex_to_argb('#121016')
+        elif not darkmode and color in ("term7", "term8"):
+            # Ensure comments, separators, and dim text are crisp and legible in light mode
+            harmonized = hex_to_argb('#4B5563')
         else:
-            harmonized = harmonize(hex_to_argb(val), primary_color_argb, args.harmonize_threshold, args.harmony)
-            hct_color = Hct.from_int(harmonized)
             if darkmode:
+                harmonized = harmonize(hex_to_argb(val), primary_color_argb, args.harmonize_threshold, args.harmony)
+                hct_color = Hct.from_int(harmonized)
                 target_tone = max(65.0, min(85.0, hct_color.tone * (1 + args.term_fg_boost)))
                 harmonized = Hct.from_hct(hct_color.hue, max(30.0, hct_color.chroma), target_tone).to_int()
             else:
-                target_tone = min(45.0, max(22.0, hct_color.tone * (1 - args.term_fg_boost)))
-                harmonized = Hct.from_hct(hct_color.hue, max(35.0, hct_color.chroma), target_tone).to_int()
+                # In light mode, preserve distinct ANSI hues (red=red, green=green, yellow=yellow)
+                # and scale tone to deep high-contrast range (18.0 - 28.0)
+                hct_color = Hct.from_int(hex_to_argb(val))
+                target_tone = min(28.0, max(18.0, hct_color.tone * (1 - args.term_fg_boost)))
+                chroma = max(40.0, hct_color.chroma)
+                harmonized = Hct.from_hct(hct_color.hue, chroma, target_tone).to_int()
         term_colors[color] = argb_to_hex(harmonized)
 
 if args.debug == False:
