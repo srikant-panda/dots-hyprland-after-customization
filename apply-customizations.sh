@@ -34,6 +34,10 @@ done
 
 # 2. Copy all customized config files
 echo "[2/6] Applying custom configuration files..."
+# Ensure ~/.config/gtk-4.0/gtk.css is never a root-owned symlink causing Permission Denied in matugen
+if [ -L "$HOME/.config/gtk-4.0/gtk.css" ]; then
+    rm -f "$HOME/.config/gtk-4.0/gtk.css"
+fi
 cp -rv "$CONFIGS_SRC"/* "$HOME/.config/"
 rm -f "$HOME/.config/kitty"/*.auto.conf 2>/dev/null || true
 
@@ -183,5 +187,6 @@ echo " 16. Terminal Theming: Dynamic Kitty & ANSI 16 color harmony for Light & D
 echo " 17. GTK & System Theming: Two-way automatic synchronization for GTK 3, GTK 4, xsettingsd, and Qt/KDE."
 echo " 18. Top Bar: Variable-length title truncation (...) and responsive center module stability."
 echo " 19. Cursor Configuration: Uniform Adwaita default with HyprMod multi-layer live syncing (Hyprland, GTK 3/4, xsettingsd, XDG)."
+echo " 20. Dark/Light Mode Switching: Animated 360° rotation & scale bounce, screen fade overlay veil, and instant rigid synchronization between Top Bar and Quick Settings."
 echo "===================================================================="
 

@@ -217,6 +217,31 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Standard Grayscale 256-Color Restoration:** Removed unused overrides for colors 232–234, 236–239, 248–251, 253–254 from `kitty-theme.conf` and `sequences.txt`, which previously corrupted standard 256-color grayscale into pure white (`#FFFFFF`) and pale pink in light mode.
   - **Universal Terminal Mode Environment (`COLORFGBG` & `GLAMOUR_STYLE`):** Updated `switchwall.sh` to dynamically export `COLORFGBG="0;15"` and `GLAMOUR_STYLE="light"` to Hyprland and persist to `colorfgbg.fish` for all fish shell sessions. CLI tools (like `agy`, `bat`, `glow`, `lipgloss`, `termenv`, `fzf`) automatically use high-contrast light themes instead of dark themes with faint yellow/cyan text.
 
+### 20. Smooth & Rigid Dark/Light Mode Switching System
+- **Files:**
+  - `~/.config/quickshell/ii/services/MaterialThemeLoader.qml`
+  - `~/.config/quickshell/ii/modules/common/widgets/ThemeTransitionOverlay.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/UtilButtons.qml`
+  - `~/.config/quickshell/ii/modules/common/models/quickToggles/DarkModeToggle.qml`
+  - `~/.config/quickshell/ii/modules/common/widgets/LightDarkPreferenceButton.qml`
+  - `~/.config/quickshell/ii/modules/settings/QuickConfig.qml`
+  - `~/.config/quickshell/ii/shell.qml`
+  - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
+  - `~/.config/hypr/hyprland/rules.lua`
+  - `~/.config/gtk-4.0/gtk.css`
+- **Features:**
+  - **Single Source of Truth (`MaterialThemeLoader`):** Centralized `toggleLightDark()` method with optimistic `targetDark` state update, eliminating delay between click and UI response. Both the top bar toggle button and quick settings toggle are bound to the identical state and flip simultaneously.
+  - **Smooth Visual Animations:**
+    - **Top Bar Util Button:** 360-degree rotation animation with `Easing.OutBack` and bounce overshoot, accompanied by a tactile `scale: 0.72` compression during transition and smooth color fading.
+    - **Quick Settings Android Toggle:** Instant active state flip, animated background expansion, radius change, and icon rotation.
+  - **Screen Veil Transition Overlay (`ThemeTransitionOverlay.qml`):** Fullscreen non-blocking transition overlay across all monitors on `WlrLayer.Overlay` with `mask: Region { item: null }` (100% click-through). Softens harsh full-screen color snaps during palette reloads with a gentle 650ms fade curve.
+  - **Concurrency & Rigidity Guard:**
+    - **QML Debounce:** Rapid repeated clicks are filtered while a switch is in flight to prevent process spamming or race conditions.
+    - **Safety Timer:** 3.5s timeout automatically resets any transient switching states if an external process fails.
+    - **Process Lock (`flock`):** Exclusive non-blocking lock (`switchwall.lock`) prevents multiple simultaneous `switchwall.sh` executions from clobbering `colors.json` or corrupted configs.
+  - **Matugen Permission Fix:** Replaced root-owned symlink on `~/.config/gtk-4.0/gtk.css` with a standard user-writable file, eliminating `os error 13` crashes and ensuring Matugen executes in under 1 second.
+  - **Optimized Fast-Path (`--noswitch`):** Skips redundant wallpaper upscaling prompts and unnecessary mpvpaper restarts when merely toggling dark/light mode for the current background.
+
 ---
 
 ## 🗂 Directory Structure

@@ -12,6 +12,14 @@ SHELL_CONFIG_FILE="$XDG_CONFIG_HOME/illogical-impulse/config.json"
 MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$SCRIPT_DIR/terminal/scheme-base.json"
 
+# Prevent concurrent execution collisions
+LOCKFILE="${XDG_RUNTIME_DIR:-/tmp}/switchwall.lock"
+exec 200>"$LOCKFILE"
+if ! flock -n 200; then
+    echo "[switchwall.sh] Another instance is already running. Exiting." >&2
+    exit 0
+fi
+
 handle_kde_material_you_colors() {
     # Check if Qt app theming is enabled in config
     if [ -f "$SHELL_CONFIG_FILE" ]; then
@@ -216,11 +224,14 @@ switch() {
     type_flag="$3"
     color_flag="$4"
     color="$5"
+    noswitch_flag="$6"
 
-    # Start Gemini auto-categorization if enabled
-    aiStylingEnabled=$(jq -r '.background.widgets.clock.cookie.aiStyling' "$SHELL_CONFIG_FILE")
-    if [[ "$aiStylingEnabled" == "true" ]]; then
-        categorize_wallpaper "$imgpath" &
+    # Start Gemini auto-categorization if enabled (only on wallpaper change)
+    if [[ "$noswitch_flag" != "1" ]]; then
+        aiStylingEnabled=$(jq -r '.background.widgets.clock.cookie.aiStyling' "$SHELL_CONFIG_FILE")
+        if [[ "$aiStylingEnabled" == "true" ]]; then
+            categorize_wallpaper "$imgpath" &
+        fi
     fi
 
     read scale screenx screeny screensizey < <(hyprctl monitors -j | jq '.[] | select(.focused) | .scale, .x, .y, .height' | xargs)
@@ -241,8 +252,10 @@ switch() {
             exit 0
         fi
 
-        check_and_prompt_upscale "$imgpath" &
-        kill_existing_mpvpaper
+        if [[ "$noswitch_flag" != "1" ]]; then
+            check_and_prompt_upscale "$imgpath" &
+            kill_existing_mpvpaper
+        fi
 
         if is_video "$imgpath"; then
             mkdir -p "$THUMBNAIL_DIR"
@@ -307,8 +320,10 @@ switch() {
             matugen_args+=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
             # Update wallpaper path in config
-            set_wallpaper_path "$imgpath"
-            remove_restore
+            if [[ "$noswitch_flag" != "1" ]]; then
+                set_wallpaper_path "$imgpath"
+                remove_restore
+            fi
         fi
     fi
 
@@ -364,9 +379,7 @@ switch() {
     "$SCRIPT_DIR"/applycolor.sh
 
     # Pass screen width, height, and wallpaper path to post_process
-    max_width_desired="$(hyprctl monitors -j | jq '([.[].width] | min)' | xargs)"
-    max_height_desired="$(hyprctl monitors -j | jq '([.[].height] | min)' | xargs)"
-    post_process "$max_width_desired" "$max_height_desired" "$imgpath"
+    post_process "" "" "$imgpath"
 }
 
 main() {
@@ -521,7 +534,7 @@ main() {
         fi
     fi
 
-    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color"
+    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color" "$noswitch_flag"
 }
 
 main "$@"
