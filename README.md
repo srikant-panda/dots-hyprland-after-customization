@@ -217,32 +217,32 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Standard Grayscale 256-Color Restoration:** Removed unused overrides for colors 232–234, 236–239, 248–251, 253–254 from `kitty-theme.conf` and `sequences.txt`, which previously corrupted standard 256-color grayscale into pure white (`#FFFFFF`) and pale pink in light mode.
   - **Universal Terminal Mode Environment (`COLORFGBG` & `GLAMOUR_STYLE`):** Updated `switchwall.sh` to dynamically export `COLORFGBG="0;15"` and `GLAMOUR_STYLE="light"` to Hyprland and persist to `colorfgbg.fish` for all fish shell sessions. CLI tools (like `agy`, `bat`, `glow`, `lipgloss`, `termenv`, `fzf`) automatically use high-contrast light themes instead of dark themes with faint yellow/cyan text.
 
-### 20. Expanding Light-Orb Circular Reveal Theme Transition
+### 20. Smooth Theme Switching Architecture
 - **Files:**
-  - `~/.config/quickshell/ii/scripts/colors/capture_snapshot.sh`
   - `~/.config/quickshell/ii/services/MaterialThemeLoader.qml`
-  - `~/.config/quickshell/ii/modules/common/widgets/ThemeTransitionOverlay.qml`
   - `~/.config/quickshell/ii/modules/common/Directories.qml`
+  - `~/.config/quickshell/ii/modules/common/widgets/RoundCorner.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/BarContent.qml`
   - `~/.config/quickshell/ii/modules/ii/bar/UtilButtons.qml`
   - `~/.config/quickshell/ii/modules/common/models/quickToggles/DarkModeToggle.qml`
   - `~/.config/quickshell/ii/modules/ii/sidebarRight/quickToggles/androidStyle/AndroidQuickToggleButton.qml`
-  - `~/.config/quickshell/ii/modules/common/widgets/LightDarkPreferenceButton.qml`
-  - `~/.config/quickshell/ii/modules/settings/QuickConfig.qml`
+  - `~/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml`
+  - `~/.config/quickshell/ii/modules/ii/sidebarLeft/SidebarLeft.qml`
   - `~/.config/quickshell/ii/shell.qml`
   - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
-  - `~/.config/hypr/hyprland/rules.lua`
   - `~/.config/gtk-4.0/gtk.css`
 - **Features:**
-  - **Expanding Light-Orb Circular Reveal Animation:**
-    - On toggling between dark and light themes, an instantaneous parallel screen snapshot (~40ms) is captured using `grim` across all active monitors.
-    - An overlay window on `WlrLayer.Overlay` displays the old screen snapshot with `mask: Region { item: null }` (100% click-through).
-    - An expanding circular aperture (cutout) animates outward from the mouse cursor or toggle button position over 550ms (`Easing.OutCubic`), smoothly peeling away the old desktop appearance to reveal the live newly themed desktop beneath it (wallpaper, status bar, and visible windows).
-    - An illuminated **light-orb ring** with multi-layer glowing auras outlines the expanding circular boundary (`#FFFFFF` for dark reveal, warm sun-gold `#FFE58F` for light reveal).
-    - **Multi-Monitor Geometry:** Relative screen coordinates and distance to the furthest corner (`maxRadius`) are calculated dynamically per-screen, guaranteeing seamless expansion across multiple displays without leaving uncovered corners or visual artifacts.
-  - **Single Source of Truth (`MaterialThemeLoader`):** Centralized `toggleLightDark()` orchestrates the snapshot capture, optimistic state changes, overlay animation, and background theme execution (`switchwall.sh --noswitch`).
-  - **Automatic Lifecycle & Cleanup:** Temporary snapshots in `/tmp/quickshell/media/theme_snapshots/` are automatically deleted immediately once the 550ms animation finishes.
-  - **Fail-safe Fallback:** If `grim` is missing or snapshot capture fails, the system automatically falls back to an immediate direct theme toggle without interruption.
-  - **Optimized Fast-Path & Locking:** Process locking (`flock -n 200`) on `/tmp/switchwall.lock` prevents concurrent race conditions, while `--noswitch` skips redundant mpvpaper restarts and monitor upscale checks.
+  - **Instant, Rigid State Synchronization:**
+    - Clicking the theme toggle (top bar button or Quick Settings tile) immediately flips `MaterialThemeLoader.targetDark` optimistically.
+    - Buttons and toggles react without latency, eliminating dead clicks or lag.
+    - In-flight debounce prevents double-execution collisions while `switchwall.sh` runs.
+  - **Smooth QtQuick Color Transitions:**
+    - Panel surfaces (`BarContent.qml`, `RoundCorner.qml`, `SidebarRightContent.qml`, `SidebarLeft.qml`) utilize smooth `Behavior on color` (`ColorAnimation` with `Easing.OutCubic`) to glide between palettes instead of harsh 0ms color snapping.
+    - Top bar toggle button features a crisp 400ms micro-interaction (scale & fade pulse) with smooth color interpolation.
+  - **Fast Background Generation & Locking:**
+    - Execution runs with concurrency locking (`flock -n 200` on `/tmp/switchwall.lock`).
+    - Skips redundant video wallpaper restarts and monitor upscale checks during theme toggles (`--noswitch`).
+    - Removed heavy fullscreen snapshot overlays and screenshot capture for a 100% native, stutter-free desktop experience.
   - **Matugen Permission Fix:** User-writable `~/.config/gtk-4.0/gtk.css` eliminates `os error 13` crashes.
 
 ---

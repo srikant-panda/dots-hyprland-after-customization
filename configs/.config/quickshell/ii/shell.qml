@@ -22,7 +22,6 @@ ShellRoot {
 
     // Stuff for every panel family
     ReloadPopup {}
-    ThemeTransitionOverlay {}
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()

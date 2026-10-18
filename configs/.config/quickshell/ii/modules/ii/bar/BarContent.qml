@@ -55,6 +55,13 @@ Item { // Bar content region
         radius: Config.options.bar.cornerStyle === 1 ? Appearance.rounding.windowRounding : 0
         border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
         border.color: Appearance.colors.colLayer0Border
+
+        Behavior on color {
+            animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+        }
+        Behavior on border.color {
+            animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+        }
     }
 
     FocusedScrollMouseArea { // Left side | scroll to change brightness

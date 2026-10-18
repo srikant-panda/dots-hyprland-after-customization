@@ -58,6 +58,13 @@ Item {
         border.color: Appearance.colors.colLayer0Border
         radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
 
+        Behavior on color {
+            animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+        }
+        Behavior on border.color {
+            animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+        }
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: sidebarPadding
