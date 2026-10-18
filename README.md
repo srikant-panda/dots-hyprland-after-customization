@@ -245,7 +245,34 @@ bash ~/dots-customizations/apply-customizations.sh
     - Removed heavy fullscreen snapshot overlays and screenshot capture for a 100% native, stutter-free desktop experience.
   - **Matugen Permission Fix:** User-writable `~/.config/gtk-4.0/gtk.css` eliminates `os error 13` crashes.
 
+### 21. Multi-Source Media Pill, Context Menu & Horizontal Source Switcher
+- **Files:**
+  - `~/.config/quickshell/ii/modules/common/functions/MediaUtils.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/MediaContextMenu.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/Media.qml`
+  - `~/.config/quickshell/ii/modules/ii/verticalBar/VerticalMedia.qml`
+  - `~/.config/quickshell/ii/modules/ii/mediaControls/MediaControls.qml`
+  - `~/.config/quickshell/ii/modules/ii/mediaControls/PlayerControl.qml`
+  - `~/.config/quickshell/ii/services/MprisController.qml`
+- **Features:**
+  - **Right-Click Context Menu on Topbar/Vertical Bar Media Pill:**
+    - Right-clicking the media pill opens an authentic Material 3 floating context menu anchored to the bar.
+    - Displays current media title, artist, source application badge, and playback status.
+    - Quick playback controls: Play/Pause, Next Track, Previous Track.
+    - Active source switcher list (when multiple players are active) with real app icons.
+    - Window focus action ("Open Player Window" via `player.raise()`) and full controls toggle.
+    - Dedicated "Close Source (<App>)" button to terminate or cleanly stop the source via MPRIS/playerctl.
+  - **Horizontal Source Selector (No Vertical Stacking):**
+    - When multiple media sources are active (e.g. YouTube in Chrome/Firefox, Spotify, KDE Connect), the media controls popup no longer stacks player cards vertically.
+    - Renders a clean top horizontal source switcher bar (`[ Sources ] [ 🌐 Google Chrome ] [ 🎵 Spotify ] [ 📱 KDE Connect ]`).
+    - Clicking any source pill instantly switches active player focus.
+    - Each source pill supports right-click context menu and includes a quick close button (`x`).
+  - **MPRIS De-duplication & Reactivity Fixes:**
+    - Fixed upstream `filterDuplicatePlayers` bug where negative position differences merged distinct applications.
+    - Fixed `MprisController.players` reactivity so new and closed media sources update immediately.
+
 ---
+
 
 ## 🗂 Directory Structure
 
