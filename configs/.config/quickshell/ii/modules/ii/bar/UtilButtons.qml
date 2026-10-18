@@ -105,35 +105,82 @@ Item {
             active: Config.options.bar.utilButtons.showDarkModeToggle
             visible: Config.options.bar.utilButtons.showDarkModeToggle
             sourceComponent: CircleUtilButton {
+                id: darkLightBtn
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: event => MaterialThemeLoader.toggleLightDark()
-                MaterialSymbol {
-                    id: darkLightIcon
-                    horizontalAlignment: Qt.AlignHCenter
-                    fill: 0
-                    text: MaterialThemeLoader.targetDark ? "light_mode" : "dark_mode"
-                    iconSize: Appearance.font.pixelSize.large
-                    color: Appearance.colors.colOnLayer2
-                    rotation: MaterialThemeLoader.targetDark ? 0 : 360
-                    scale: MaterialThemeLoader.isSwitching ? 0.72 : 1.0
 
-                    Behavior on rotation {
-                        NumberAnimation {
-                            duration: 450
-                            easing.type: Easing.OutBack
-                            easing.overshoot: 1.4
+                Item {
+                    id: iconContainer
+                    implicitWidth: Appearance.font.pixelSize.large
+                    implicitHeight: Appearance.font.pixelSize.large
+                    anchors.centerIn: parent
+
+                    property bool displayDark: MaterialThemeLoader.targetDark
+                    readonly property bool targetDark: MaterialThemeLoader.targetDark
+
+                    onTargetDarkChanged: {
+                        zoomAnim.restart()
+                    }
+
+                    SequentialAnimation {
+                        id: zoomAnim
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: darkLightIcon
+                                property: "scale"
+                                to: 0.0
+                                duration: 150
+                                easing.type: Easing.InBack
+                                easing.overshoot: 1.1
+                            }
+                            NumberAnimation {
+                                target: darkLightIcon
+                                property: "opacity"
+                                to: 0.0
+                                duration: 130
+                                easing.type: Easing.InQuad
+                            }
+                        }
+                        ScriptAction {
+                            script: {
+                                iconContainer.displayDark = iconContainer.targetDark
+                            }
+                        }
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: darkLightIcon
+                                property: "scale"
+                                from: 0.0
+                                to: 1.0
+                                duration: 250
+                                easing.type: Easing.OutBack
+                                easing.overshoot: 1.4
+                            }
+                            NumberAnimation {
+                                target: darkLightIcon
+                                property: "opacity"
+                                from: 0.0
+                                to: 1.0
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
                         }
                     }
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 220
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 350
-                            easing.type: Easing.OutCubic
+
+                    MaterialSymbol {
+                        id: darkLightIcon
+                        anchors.centerIn: parent
+                        horizontalAlignment: Qt.AlignHCenter
+                        fill: 0
+                        text: iconContainer.displayDark ? "light_mode" : "dark_mode"
+                        iconSize: Appearance.font.pixelSize.large
+                        color: Appearance.colors.colOnLayer2
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 350
+                                easing.type: Easing.OutCubic
+                            }
                         }
                     }
                 }

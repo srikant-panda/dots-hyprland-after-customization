@@ -34,16 +34,30 @@ Scope {
 
             visible: MaterialThemeLoader.isTransitioning || veil.opacity > 0.001
 
-            Rectangle {
-                id: veil
+            Item {
+                id: veilContainer
                 anchors.fill: parent
-                color: MaterialThemeLoader.targetDark ? "#0A090D" : "#FAF5FF"
-                opacity: MaterialThemeLoader.isTransitioning ? 0.28 : 0.0
+                transformOrigin: Item.Center
+                scale: MaterialThemeLoader.isTransitioning ? 1.0 : 1.06
 
-                Behavior on opacity {
+                Behavior on scale {
                     NumberAnimation {
-                        duration: MaterialThemeLoader.isTransitioning ? 200 : 450
-                        easing.type: MaterialThemeLoader.isTransitioning ? Easing.OutCubic : Easing.InOutQuad
+                        duration: 550
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Rectangle {
+                    id: veil
+                    anchors.fill: parent
+                    color: MaterialThemeLoader.targetDark ? "#0A090D" : "#FAF5FF"
+                    opacity: MaterialThemeLoader.isTransitioning ? 0.28 : 0.0
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: MaterialThemeLoader.isTransitioning ? 200 : 450
+                            easing.type: MaterialThemeLoader.isTransitioning ? Easing.OutCubic : Easing.InOutQuad
+                        }
                     }
                 }
             }

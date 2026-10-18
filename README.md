@@ -231,10 +231,11 @@ bash ~/dots-customizations/apply-customizations.sh
   - `~/.config/gtk-4.0/gtk.css`
 - **Features:**
   - **Single Source of Truth (`MaterialThemeLoader`):** Centralized `toggleLightDark()` method with optimistic `targetDark` state update, eliminating delay between click and UI response. Both the top bar toggle button and quick settings toggle are bound to the identical state and flip simultaneously.
-  - **Smooth Visual Animations:**
-    - **Top Bar Util Button:** 360-degree rotation animation with `Easing.OutBack` and bounce overshoot, accompanied by a tactile `scale: 0.72` compression during transition and smooth color fading.
-    - **Quick Settings Android Toggle:** Instant active state flip, animated background expansion, radius change, and icon rotation.
-  - **Screen Veil Transition Overlay (`ThemeTransitionOverlay.qml`):** Fullscreen non-blocking transition overlay across all monitors on `WlrLayer.Overlay` with `mask: Region { item: null }` (100% click-through). Softens harsh full-screen color snaps during palette reloads with a gentle 650ms fade curve.
+  - **Zoom-out Transition Animations:**
+    - **Top Bar Util Button:** Replaced pinwheel rotation with a true zoom-out/zoom-in transition. On toggle, the existing icon zooms out (shrinks to 0 with `Easing.InBack`), swaps glyphs between sun and moon at zero size, and the new icon zooms in (springs from 0 to 1 with `Easing.OutBack` and a lively 1.4 bounce overshoot).
+    - **Quick Settings Android Toggle:** The icon compresses (zooms out to 0.65) on toggle and springs back to full size with `Easing.OutBack`.
+    - **Desktop & Wallpaper Zoom-out Depth (`Background.qml`):** During theme transitions (`isTransitioning`), the desktop wallpaper and widgets gently zoom out to `0.96` and smoothly glide back to `1.0`, creating a smooth camera pull-back depth sensation.
+  - **Screen Veil Transition Overlay (`ThemeTransitionOverlay.qml`):** Fullscreen non-blocking transition overlay across all monitors on `WlrLayer.Overlay` with `mask: Region { item: null }` (100% click-through) and a gentle scale zoom-out motion (1.06 -> 1.00) that softens palette changes.
   - **Concurrency & Rigidity Guard:**
     - **QML Debounce:** Rapid repeated clicks are filtered while a switch is in flight to prevent process spamming or race conditions.
     - **Safety Timer:** 3.5s timeout automatically resets any transient switching states if an external process fails.
