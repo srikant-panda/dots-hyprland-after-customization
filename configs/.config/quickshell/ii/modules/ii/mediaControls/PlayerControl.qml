@@ -18,6 +18,8 @@ import qs.modules.ii.bar as Bar
 Item { // Player instance
     id: root
     required property MprisPlayer player
+    property var availablePlayers: []
+    readonly property bool hasMultipleSources: root.availablePlayers && root.availablePlayers.length > 1
     property var artUrl: player?.trackArtUrl
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: Qt.md5(artUrl)
@@ -28,6 +30,9 @@ Item { // Player instance
     property real maxVisualizerValue: 1000 // Max value in the data points
     property int visualizerSmoothing: 2 // Number of points to average for smoothing
     property real radius
+
+    implicitWidth: Appearance.sizes.mediaControlsWidth + Appearance.sizes.elevationMargin * 2
+    implicitHeight: Appearance.sizes.mediaControlsHeight + (root.hasMultipleSources ? 36 : 0) + Appearance.sizes.elevationMargin * 2
 
     property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
 
@@ -99,11 +104,15 @@ Item { // Player instance
 
     Loader {
         id: cardContextMenuLoader
+        property MprisPlayer targetPlayer: null
         active: false
         sourceComponent: Bar.MediaContextMenu {
             anchorItem: background
-            player: root.player
-            onPopupClosed: cardContextMenuLoader.active = false
+            player: cardContextMenuLoader.targetPlayer ?? root.player
+            onPopupClosed: {
+                cardContextMenuLoader.active = false;
+                cardContextMenuLoader.targetPlayer = null;
+            }
         }
     }
 
@@ -157,10 +166,115 @@ Item { // Player instance
             color: blendedColors.colPrimary
         }
 
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: 13
-            spacing: 15
+            spacing: 8
+
+            // Top Horizontal Source Switcher (Shown ONLY when multiple sources exist)
+            RowLayout {
+                id: sourceBarRow
+                visible: root.hasMultipleSources
+                Layout.fillWidth: true
+                spacing: 6
+                z: 10
+
+                MaterialSymbol {
+                    text: "queue_music"
+                    iconSize: 16
+                    color: blendedColors.colPrimary
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Flickable {
+                    Layout.fillWidth: true
+                    implicitHeight: 26
+                    contentWidth: pillsRow.implicitWidth
+                    contentHeight: 26
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    RowLayout {
+                        id: pillsRow
+                        spacing: 6
+
+                        Repeater {
+                            model: root.availablePlayers
+                            delegate: RippleButton {
+                                id: srcBtn
+                                required property MprisPlayer modelData
+                                readonly property var info: MediaUtils.getSourceInfo(modelData)
+                                readonly property bool isSelected: modelData === root.player
+
+                                implicitHeight: 26
+                                implicitWidth: pillContent.implicitWidth + 16
+                                buttonRadius: 13
+
+                                colBackground: isSelected ? blendedColors.colPrimary : ColorUtils.transparentize(blendedColors.colLayer1, 0.4)
+                                colBackgroundHover: isSelected ? ColorUtils.mix(blendedColors.colPrimary, blendedColors.colOnPrimary, 0.15) : ColorUtils.transparentize(blendedColors.colLayer1, 0.2)
+                                colRipple: isSelected ? ColorUtils.mix(blendedColors.colPrimary, blendedColors.colOnPrimary, 0.3) : blendedColors.colLayer1
+
+                                contentItem: RowLayout {
+                                    id: pillContent
+                                    anchors.centerIn: parent
+                                    spacing: 5
+
+                                    Loader {
+                                        active: (srcBtn.info.iconPath || "").length > 0
+                                        visible: active
+                                        Layout.alignment: Qt.AlignVCenter
+                                        sourceComponent: IconImage {
+                                            implicitSize: 14
+                                            source: srcBtn.info.iconPath
+                                        }
+                                    }
+
+                                    Loader {
+                                        active: !(srcBtn.info.iconPath || "").length > 0
+                                        visible: active
+                                        Layout.alignment: Qt.AlignVCenter
+                                        sourceComponent: MaterialSymbol {
+                                            text: srcBtn.info.materialSymbol
+                                            iconSize: 14
+                                            color: srcBtn.isSelected ? blendedColors.colOnPrimary : blendedColors.colOnLayer0
+                                        }
+                                    }
+
+                                    StyledText {
+                                        text: srcBtn.info.name
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        font.weight: srcBtn.isSelected ? Font.Bold : Font.Normal
+                                        color: srcBtn.isSelected ? blendedColors.colOnPrimary : blendedColors.colOnLayer0
+                                        Layout.alignment: Qt.AlignVCenter
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                onClicked: {
+                                    MprisController.setActivePlayer(modelData);
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.RightButton
+                                    onClicked: (event) => {
+                                        if (event.button === Qt.RightButton) {
+                                            cardContextMenuLoader.targetPlayer = modelData;
+                                            cardContextMenuLoader.active = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Main Media Player Row
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 15
 
             Rectangle { // Art background
                 id: artBackground
@@ -320,92 +434,15 @@ Item { // Player instance
                 }
             }
         }
+    }
 
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
             onClicked: (event) => {
                 if (event.button === Qt.RightButton) {
+                    cardContextMenuLoader.targetPlayer = root.player;
                     cardContextMenuLoader.active = true;
-                }
-            }
-        }
-
-        // Top right Source Badge & Close Button
-        RowLayout {
-            id: topSourceRow
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.margins: 12
-            spacing: 6
-            z: 10
-
-            readonly property var srcInfo: MediaUtils.getSourceInfo(root.player)
-
-            // Source indicator badge
-            Rectangle {
-                implicitHeight: 22
-                implicitWidth: badgeContent.implicitWidth + 12
-                radius: 11
-                color: ColorUtils.transparentize(blendedColors.colLayer1, 0.3)
-                border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.5)
-                border.width: 1
-
-                RowLayout {
-                    id: badgeContent
-                    anchors.centerIn: parent
-                    spacing: 4
-
-                    Loader {
-                        active: (topSourceRow.srcInfo.iconPath || "").length > 0
-                        Layout.alignment: Qt.AlignVCenter
-                        sourceComponent: IconImage {
-                            implicitSize: 13
-                            source: topSourceRow.srcInfo.iconPath
-                        }
-                    }
-
-                    Loader {
-                        active: !(topSourceRow.srcInfo.iconPath || "").length > 0
-                        Layout.alignment: Qt.AlignVCenter
-                        sourceComponent: MaterialSymbol {
-                            text: topSourceRow.srcInfo.materialSymbol
-                            iconSize: 13
-                            color: blendedColors.colOnLayer0
-                        }
-                    }
-
-                    StyledText {
-                        text: topSourceRow.srcInfo.name
-                        font.pixelSize: 10
-                        font.weight: Font.Medium
-                        color: blendedColors.colOnLayer0
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-                }
-            }
-
-            // Quick Close Source button
-            RippleButton {
-                id: quickCloseBtn
-                implicitWidth: 22
-                implicitHeight: 22
-                buttonRadius: 11
-                colBackground: ColorUtils.transparentize(blendedColors.colLayer1, 0.3)
-                colBackgroundHover: Appearance.colors.colErrorContainer
-                colRipple: Appearance.colors.colError
-                ToolTip.visible: hovered
-                ToolTip.text: `${Translation.tr("Close Source")} (${topSourceRow.srcInfo.name})`
-
-                contentItem: MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: "close"
-                    iconSize: 13
-                    color: quickCloseBtn.hovered ? Appearance.colors.colOnErrorContainer : blendedColors.colSubtext
-                }
-
-                onClicked: {
-                    MediaUtils.closeSource(root.player);
                 }
             }
         }

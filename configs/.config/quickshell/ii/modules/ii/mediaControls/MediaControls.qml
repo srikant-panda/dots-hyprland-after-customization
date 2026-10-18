@@ -22,7 +22,7 @@ Scope {
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property var realPlayers: MprisController.players
     readonly property var meaningfulPlayers: filterDuplicatePlayers(realPlayers)
-
+    readonly property bool hasMedia: root.meaningfulPlayers.length > 0
     readonly property MprisPlayer currentSelectedPlayer: (root.meaningfulPlayers.indexOf(root.activePlayer) !== -1 ? root.activePlayer : root.meaningfulPlayers[0]) ?? null
     readonly property real osdWidth: Appearance.sizes.osdWidth
     readonly property real widgetWidth: Appearance.sizes.mediaControlsWidth
@@ -32,17 +32,19 @@ Scope {
 
     function filterDuplicatePlayers(players) {
         if (!players) return [];
+        let validPlayers = players.filter(p => p && ((p.trackTitle && p.trackTitle.trim().length > 0) || p.isPlaying));
+        if (validPlayers.length === 0) return [];
         let filtered = [];
         let used = new Set();
 
-        for (let i = 0; i < players.length; ++i) {
+        for (let i = 0; i < validPlayers.length; ++i) {
             if (used.has(i))
                 continue;
-            let p1 = players[i];
+            let p1 = validPlayers[i];
             let group = [i];
 
-            for (let j = i + 1; j < players.length; ++j) {
-                let p2 = players[j];
+            for (let j = i + 1; j < validPlayers.length; ++j) {
+                let p2 = validPlayers[j];
                 const isSameApp = (p1.desktopEntry && p2.desktopEntry && p1.desktopEntry === p2.desktopEntry) ||
                                   (p1.identity && p2.identity && p1.identity === p2.identity) ||
                                   (p1.dbusName && p2.dbusName && p1.dbusName === p2.dbusName);
@@ -60,11 +62,11 @@ Scope {
             }
 
             // Pick the one with non-empty trackArtUrl, or fallback to the first
-            let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
+            let chosenIdx = group.find(idx => validPlayers[idx].trackArtUrl && validPlayers[idx].trackArtUrl.length > 0);
             if (chosenIdx === undefined)
                 chosenIdx = group[0];
 
-            filtered.push(players[chosenIdx]);
+            filtered.push(validPlayers[chosenIdx]);
             group.forEach(idx => used.add(idx));
         }
         return filtered;
@@ -90,9 +92,9 @@ Scope {
 
     Loader {
         id: mediaControlsLoader
-        active: GlobalStates.mediaControlsOpen
+        active: GlobalStates.mediaControlsOpen && root.hasMedia
         onActiveChanged: {
-            if (!mediaControlsLoader.active && root.realPlayers.length === 0) {
+            if (!mediaControlsLoader.active && !root.hasMedia) {
                 GlobalStates.mediaControlsOpen = false;
             }
         }
@@ -103,8 +105,8 @@ Scope {
 
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
-            implicitWidth: root.widgetWidth
-            implicitHeight: playerColumnLayout.implicitHeight
+            implicitWidth: singlePlayerControl.implicitWidth
+            implicitHeight: singlePlayerControl.implicitHeight
             color: "transparent"
             WlrLayershell.namespace: "quickshell:mediaControls"
 
@@ -115,14 +117,14 @@ Scope {
                 right: Config.options.bar.vertical && Config.options.bar.bottom
             }
             margins {
-                top: Config.options.bar.vertical ? ((panelWindow.screen.height / 2) - widgetHeight * 1.5) : Appearance.sizes.barHeight
+                top: Config.options.bar.vertical ? ((panelWindow.screen.height / 2) - (singlePlayerControl.implicitHeight / 2)) : Appearance.sizes.barHeight
                 bottom: Appearance.sizes.barHeight
                 left: Config.options.bar.vertical ? Appearance.sizes.barHeight : ((panelWindow.screen.width / 2) - (osdWidth / 2) - widgetWidth)
                 right: Appearance.sizes.barHeight
             }
 
             mask: Region {
-                item: playerColumnLayout
+                item: singlePlayerControl
             }
 
             Component.onCompleted: {
@@ -138,234 +140,13 @@ Scope {
                 }
             }
 
-            Loader {
-                id: popupSourceContextMenuLoader
-                property MprisPlayer targetPlayer: null
-                active: false
-                sourceComponent: Bar.MediaContextMenu {
-                    anchorItem: panelWindow
-                    player: popupSourceContextMenuLoader.targetPlayer ?? root.currentSelectedPlayer
-                    onPopupClosed: popupSourceContextMenuLoader.active = false
-                }
-            }
-
-            ColumnLayout {
-                id: playerColumnLayout
+            PlayerControl {
+                id: singlePlayerControl
                 anchors.fill: parent
-                spacing: 2
-
-                // Horizontal Source Switcher Bar (displayed when multiple sources exist)
-                Item {
-                    id: sourceBarContainer
-                    visible: root.meaningfulPlayers.length > 1
-                    Layout.fillWidth: true
-                    implicitHeight: visible ? (sourceBarBg.implicitHeight + Appearance.sizes.elevationMargin * 2) : 0
-
-                    StyledRectangularShadow {
-                        target: sourceBarBg
-                    }
-
-                    Rectangle {
-                        id: sourceBarBg
-                        anchors.fill: parent
-                        anchors.margins: Appearance.sizes.elevationMargin
-                        radius: Appearance.rounding.small
-                        color: Appearance.colors.colLayer0
-                        border.color: Appearance.colors.colOutlineVariant
-                        border.width: 1
-                        implicitHeight: sourceRow.implicitHeight + 10
-
-                        RowLayout {
-                            id: sourceRow
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            anchors.rightMargin: 8
-                            spacing: 6
-
-                            MaterialSymbol {
-                                text: "queue_music"
-                                iconSize: 18
-                                color: Appearance.colors.colPrimary
-                                Layout.leftMargin: 2
-                            }
-
-                            StyledText {
-                                text: Translation.tr("Sources")
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                font.weight: Font.DemiBold
-                                color: Appearance.colors.colPrimary
-                                Layout.rightMargin: 4
-                            }
-
-                            // Horizontal scroll / row of source icons
-                            Flickable {
-                                id: sourceFlickable
-                                Layout.fillWidth: true
-                                implicitHeight: pillsRow.implicitHeight
-                                contentWidth: pillsRow.implicitWidth
-                                contentHeight: pillsRow.implicitHeight
-                                clip: true
-                                boundsBehavior: Flickable.StopAtBounds
-
-                                RowLayout {
-                                    id: pillsRow
-                                    spacing: 6
-
-                                    Repeater {
-                                        model: ScriptModel {
-                                            values: root.meaningfulPlayers
-                                        }
-                                        delegate: RippleButton {
-                                            id: srcBtn
-                                            required property MprisPlayer modelData
-                                            readonly property var info: MediaUtils.getSourceInfo(modelData)
-                                            readonly property bool isSelected: modelData === root.currentSelectedPlayer
-
-                                            implicitHeight: 28
-                                            implicitWidth: pillContent.implicitWidth + 16
-                                            buttonRadius: 14
-
-                                            colBackground: isSelected ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colLayer1, 0.4)
-                                            colBackgroundHover: isSelected ? Appearance.colors.colPrimaryHover : Appearance.colors.colLayer1Hover
-                                            colRipple: isSelected ? Appearance.colors.colPrimaryActive : Appearance.colors.colLayer1Active
-
-                                            contentItem: RowLayout {
-                                                id: pillContent
-                                                anchors.centerIn: parent
-                                                spacing: 5
-
-                                                Loader {
-                                                    active: srcBtn.info.iconPath.length > 0
-                                                    visible: active
-                                                    Layout.alignment: Qt.AlignVCenter
-                                                    sourceComponent: IconImage {
-                                                        implicitSize: 16
-                                                        source: srcBtn.info.iconPath
-                                                    }
-                                                }
-
-                                                Loader {
-                                                    active: !srcBtn.info.iconPath || srcBtn.info.iconPath.length === 0
-                                                    visible: active
-                                                    Layout.alignment: Qt.AlignVCenter
-                                                    sourceComponent: MaterialSymbol {
-                                                        text: srcBtn.info.materialSymbol
-                                                        iconSize: 16
-                                                        color: srcBtn.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
-                                                    }
-                                                }
-
-                                                StyledText {
-                                                    text: srcBtn.info.name
-                                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                                    font.weight: srcBtn.isSelected ? Font.Bold : Font.Normal
-                                                    color: srcBtn.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
-                                                    Layout.alignment: Qt.AlignVCenter
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-
-                                            onClicked: {
-                                                MprisController.setActivePlayer(modelData);
-                                            }
-
-                                            // Right-click options on source pill
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                acceptedButtons: Qt.RightButton
-                                                onClicked: (event) => {
-                                                    if (event.button === Qt.RightButton) {
-                                                        popupSourceContextMenuLoader.targetPlayer = modelData;
-                                                        popupSourceContextMenuLoader.active = true;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Quick Close Button for current active player
-                            RippleButton {
-                                implicitWidth: 26
-                                implicitHeight: 26
-                                buttonRadius: 13
-                                colBackground: "transparent"
-                                colBackgroundHover: Appearance.colors.colErrorContainer
-                                colRipple: Appearance.colors.colError
-                                ToolTip.visible: hovered
-                                ToolTip.text: `${Translation.tr("Close")} (${MediaUtils.getSourceInfo(root.currentSelectedPlayer).name})`
-
-                                contentItem: MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "close"
-                                    iconSize: 16
-                                    color: parent.hovered ? Appearance.colors.colOnErrorContainer : Appearance.colors.colError
-                                }
-
-                                onClicked: {
-                                    MediaUtils.closeSource(root.currentSelectedPlayer);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Single Active Player Control (no vertical stacking)
-                PlayerControl {
-                    id: singlePlayerControl
-                    visible: root.meaningfulPlayers.length > 0
-                    player: root.currentSelectedPlayer
-                    visualizerPoints: root.visualizerPoints
-                    implicitWidth: root.widgetWidth
-                    implicitHeight: root.widgetHeight
-                    radius: root.popupRounding
-                }
-
-                Item {
-                    // No player placeholder
-                    Layout.alignment: {
-                        if (panelWindow.anchors.left)
-                            return Qt.AlignLeft;
-                        if (panelWindow.anchors.right)
-                            return Qt.AlignRight;
-                        return Qt.AlignHCenter;
-                    }
-                    Layout.leftMargin: Appearance.sizes.hyprlandGapsOut
-                    Layout.rightMargin: Appearance.sizes.hyprlandGapsOut
-                    visible: root.meaningfulPlayers.length === 0
-                    implicitWidth: placeholderBackground.implicitWidth + Appearance.sizes.elevationMargin
-                    implicitHeight: placeholderBackground.implicitHeight + Appearance.sizes.elevationMargin
-
-                    StyledRectangularShadow {
-                        target: placeholderBackground
-                    }
-
-                    Rectangle {
-                        id: placeholderBackground
-                        anchors.centerIn: parent
-                        color: Appearance.colors.colLayer0
-                        radius: root.popupRounding
-                        property real padding: 20
-                        implicitWidth: placeholderLayout.implicitWidth + padding * 2
-                        implicitHeight: placeholderLayout.implicitHeight + padding * 2
-
-                        ColumnLayout {
-                            id: placeholderLayout
-                            anchors.centerIn: parent
-
-                            StyledText {
-                                text: Translation.tr("No active player")
-                                font.pixelSize: Appearance.font.pixelSize.large
-                            }
-                            StyledText {
-                                color: Appearance.colors.colSubtext
-                                text: Translation.tr("Make sure your player has MPRIS support\nor try turning off duplicate player filtering")
-                                font.pixelSize: Appearance.font.pixelSize.small
-                            }
-                        }
-                    }
-                }
+                player: root.currentSelectedPlayer
+                availablePlayers: root.meaningfulPlayers
+                visualizerPoints: root.visualizerPoints
+                radius: root.popupRounding
             }
         }
     }

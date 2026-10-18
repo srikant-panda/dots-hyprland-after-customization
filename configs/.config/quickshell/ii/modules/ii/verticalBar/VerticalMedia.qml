@@ -27,6 +27,14 @@ MouseArea {
         onTriggered: activePlayer.positionChanged()
     }
 
+    readonly property bool hasMedia: activePlayer !== null && ((activePlayer.trackTitle && activePlayer.trackTitle.trim().length > 0) || activePlayer.isPlaying) && cleanedTitle !== Translation.tr("No media")
+
+    onHasMediaChanged: {
+        if (!hasMedia) {
+            contextMenuLoader.active = false;
+        }
+    }
+
     Loader {
         id: contextMenuLoader
         active: false
@@ -38,8 +46,10 @@ MouseArea {
     }
 
     acceptedButtons: Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton | Qt.RightButton | Qt.LeftButton
+    cursorShape: root.hasMedia ? Qt.PointingHandCursor : Qt.ArrowCursor
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
     onPressed: (event) => {
+        if (!root.hasMedia) return;
         if (event.button === Qt.MiddleButton) {
             activePlayer?.togglePlaying();
         } else if (event.button === Qt.BackButton) {

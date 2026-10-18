@@ -272,9 +272,7 @@ PopupWindow {
                         spacing: 6
 
                         Repeater {
-                            model: ScriptModel {
-                                values: root.allPlayers
-                            }
+                            model: root.allPlayers
                             delegate: RippleButton {
                                 id: srcBtn
                                 required property MprisPlayer modelData
