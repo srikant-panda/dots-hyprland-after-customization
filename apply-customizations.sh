@@ -195,5 +195,6 @@ echo " 18. Top Bar: Variable-length title truncation (...) and responsive center
 echo " 19. Cursor Configuration: Uniform Adwaita default with HyprMod multi-layer live syncing (Hyprland, GTK 3/4, xsettingsd, XDG)."
 echo " 20. Smooth Theme Switching: Instant, rigid optimistic toggle with concurrency locking and smooth QtQuick color transitions."
 echo " 21. Electron Code Editors: Isolated integrated terminals (VS Code, Kiro, ZCode, Cursor, Windsurf, etc.) from OS dynamic OSC escape sequences and COLORFGBG overrides across Fish and Bash."
+echo " 22. Dual Wallpapers: Dedicated Dual Wallpaper Selector (CTRL+SUPER+W), independent Dark & Light wallpaper slots, right-click context menu, and automatic switching on theme change."
 echo "===================================================================="
 

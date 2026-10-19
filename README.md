@@ -284,7 +284,28 @@ bash ~/dots-customizations/apply-customizations.sh
 - **Features:**
   - **Theming Isolation:** Integrated terminals in Electron code editors remain dedicated to the editor's active color theme rather than turning bright white or adopting dynamic desktop wallpaper colors.
   - **Dynamic PTS Detection in `applycolor.sh`:** Updated `apply_anyterm` with an `is_editor_pts()` inspector that scans process ancestry and environment variables (`VSCODE_INJECTION`, `VSCODE_PID`, `ZCODE_PID`, `TERM_PROGRAM`). Standalone terminals (Kitty, Foot, etc.) continue to receive dynamic wallpaper palettes, while editor pseudoterminals receive OSC reset sequences (`\033]110\033\\\033]111\033\\\033]112\033\\\033]104\033\\`) to maintain editor color fidelity.
-  - **Fish & Bash Startup Guards:** Added editor terminal detection to both `config.fish` and `~/.bashrc` that clears inherited session `COLORFGBG` and `GLAMOUR_STYLE` variables, bypasses dynamic sequences ingestion, and issues an OSC reset on launch.
+### 23. Dual Wallpaper Selector & Automatic Dark/Light Wallpaper Switching
+- **Dedicated Shortcut:** `CTRL + SUPER + W` opens the Dual Wallpaper Selector (existing `CTRL + SUPER + T` opens standard single wallpaper picker).
+- **Files:**
+  - `~/.config/illogical-impulse/config.json`
+  - `~/.config/quickshell/ii/modules/common/Config.qml`
+  - `~/.config/quickshell/ii/GlobalStates.qml`
+  - `~/.config/quickshell/ii/services/Wallpapers.qml`
+  - `~/.config/quickshell/ii/modules/ii/wallpaperSelector/WallpaperSelector.qml`
+  - `~/.config/quickshell/ii/modules/ii/wallpaperSelector/WallpaperSelectorContent.qml`
+  - `~/.config/quickshell/ii/modules/ii/wallpaperSelector/WallpaperDirectoryItem.qml`
+  - `~/.config/quickshell/ii/scripts/colors/switchwall.sh`
+  - `~/.config/hypr/hyprland/keybinds.lua`
+- **Features:**
+  - **Independent Dark & Light Wallpapers:** Config stored in `.background.darkWallpaperPath` and `.background.lightWallpaperPath`.
+  - **Automatic Theme Switching:** Switching between Dark Mode and Light Mode (via shortcut, top bar button, or quick settings) automatically activates the corresponding wallpaper and recalculates Material You palettes.
+  - **Interactive Dual Slot Header:** Dual Mode displays side-by-side Dark and Light wallpaper cards with live thumbnail previews, file names, and interactive `[ SELECTING ]` target slot indicators. Clicking either card sets the target slot.
+  - **Right-Click Context Menu:** Right-clicking any image in the grid displays a Material 3 context menu with options:
+    - *Set as Dark Wallpaper*
+    - *Set as Light Wallpaper*
+    - *Set as Both Wallpapers*
+  - **Grid Visual Indicators:** Grid items display badges indicating whether they are assigned as the Dark Mode wallpaper, Light Mode wallpaper, or both.
+  - **Toolbar Controls:** Bottom toolbar features a Dual Mode toggle button (`split_scene`) and a confirm Done FAB button (`check`) to commit selections.
 
 ---
 

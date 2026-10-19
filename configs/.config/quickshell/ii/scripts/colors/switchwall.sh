@@ -220,6 +220,20 @@ set_wallpaper_path() {
     fi
 }
 
+set_dark_wallpaper_path() {
+    local path="$1"
+    if [ -f "$SHELL_CONFIG_FILE" ]; then
+        jq --arg path "$path" '.background.darkWallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+    fi
+}
+
+set_light_wallpaper_path() {
+    local path="$1"
+    if [ -f "$SHELL_CONFIG_FILE" ]; then
+        jq --arg path "$path" '.background.lightWallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+    fi
+}
+
 set_thumbnail_path() {
     local path="$1"
     if [ -f "$SHELL_CONFIG_FILE" ]; then
@@ -328,7 +342,8 @@ switch() {
             matugen_args+=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
             # Update wallpaper path in config
-            if [[ "$noswitch_flag" != "1" ]]; then
+            local cur_saved_path="$(jq -r '.background.wallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null)"
+            if [[ "$noswitch_flag" != "1" || "$imgpath" != "$cur_saved_path" ]]; then
                 set_wallpaper_path "$imgpath"
                 remove_restore
             fi
@@ -438,13 +453,50 @@ main() {
                     shift
                 fi
                 ;;
+            --dark-image)
+                local dark_arg="$2"
+                set_dark_wallpaper_path "$dark_arg"
+                if [[ "$mode_flag" == "dark" ]] || { [[ -z "$mode_flag" ]] && gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | grep -q "prefer-dark"; }; then
+                    imgpath="$dark_arg"
+                fi
+                shift 2
+                ;;
+            --light-image)
+                local light_arg="$2"
+                set_light_wallpaper_path "$light_arg"
+                if [[ "$mode_flag" == "light" ]] || { [[ -z "$mode_flag" ]] && ! gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | grep -q "prefer-dark"; }; then
+                    imgpath="$light_arg"
+                fi
+                shift 2
+                ;;
             --image)
                 imgpath="$2"
+                if [[ "$mode_flag" == "dark" ]]; then
+                    set_dark_wallpaper_path "$imgpath"
+                elif [[ "$mode_flag" == "light" ]]; then
+                    set_light_wallpaper_path "$imgpath"
+                fi
                 shift 2
                 ;;
             --noswitch)
                 noswitch_flag="1"
-                imgpath=$(jq -r '.background.wallpaperPath' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "")
+                local cfg_dark="$(jq -r '.background.darkWallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null)"
+                local cfg_light="$(jq -r '.background.lightWallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null)"
+                local eff_mode="$mode_flag"
+                if [[ -z "$eff_mode" ]]; then
+                    if gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | grep -q "prefer-dark"; then
+                        eff_mode="dark"
+                    else
+                        eff_mode="light"
+                    fi
+                fi
+                if [[ "$eff_mode" == "dark" && -n "$cfg_dark" && -f "$cfg_dark" ]]; then
+                    imgpath="$cfg_dark"
+                elif [[ "$eff_mode" == "light" && -n "$cfg_light" && -f "$cfg_light" ]]; then
+                    imgpath="$cfg_light"
+                else
+                    imgpath=$(jq -r '.background.wallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "")
+                fi
                 shift
                 ;;
             *)
@@ -518,27 +570,38 @@ main() {
         fi
     fi
 
-    # If mode_flag is dark or light, try to find a variant with that mode suffix
+    # If mode_flag is dark or light, select configured wallpaper or suffix variant
     if [[ "$mode_flag" == "dark" || "$mode_flag" == "light" ]]; then
-        # Get directory, filename without extension, and extension
-        local imgdir="$(dirname "$imgpath")"
-        local imgbase="$(basename "$imgpath")"
-        local imgname="${imgbase%.*}"
-        local imgext="${imgbase##*.}"
+        local configured_target=""
+        if [[ "$mode_flag" == "dark" ]]; then
+            configured_target="$(jq -r '.background.darkWallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null)"
+        else
+            configured_target="$(jq -r '.background.lightWallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null)"
+        fi
 
-        # Strip existing -dark or -light suffix
-        local stripped_name="${imgname%-dark}"
-        stripped_name="${stripped_name%-light}"
+        if [[ "$noswitch_flag" == "1" && -n "$configured_target" && -f "$configured_target" ]]; then
+            imgpath="$configured_target"
+        elif [[ "$noswitch_flag" == "1" ]]; then
+            # Get directory, filename without extension, and extension
+            local imgdir="$(dirname "$imgpath")"
+            local imgbase="$(basename "$imgpath")"
+            local imgname="${imgbase%.*}"
+            local imgext="${imgbase##*.}"
 
-        # Construct the new path with the requested mode suffix
-        local new_imgpath="${imgdir}/${stripped_name}-${mode_flag}.${imgext}"
-        local new_stripped_imgpath="${imgdir}/${stripped_name}.${imgext}"
+            # Strip existing -dark or -light suffix
+            local stripped_name="${imgname%-dark}"
+            stripped_name="${stripped_name%-light}"
 
-        # If the variant exists, use it
-        if [[ -f "$new_imgpath" ]]; then
-            imgpath="$new_imgpath"
-        elif [[ -f "$new_stripped_imgpath" ]]; then
-            imgpath="$new_stripped_imgpath"
+            # Construct the new path with the requested mode suffix
+            local new_imgpath="${imgdir}/${stripped_name}-${mode_flag}.${imgext}"
+            local new_stripped_imgpath="${imgdir}/${stripped_name}.${imgext}"
+
+            # If the variant exists, use it
+            if [[ -f "$new_imgpath" ]]; then
+                imgpath="$new_imgpath"
+            elif [[ -f "$new_stripped_imgpath" ]]; then
+                imgpath="$new_stripped_imgpath"
+            fi
         fi
     fi
 

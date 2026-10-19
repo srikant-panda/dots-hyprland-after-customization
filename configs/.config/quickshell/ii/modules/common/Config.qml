@@ -211,6 +211,8 @@ Singleton {
                     }
                 }
                 property string wallpaperPath: ""
+                property string darkWallpaperPath: ""
+                property string lightWallpaperPath: ""
                 property string thumbnailPath: ""
                 property bool hideWhenFullscreen: true
                 property JsonObject parallax: JsonObject {

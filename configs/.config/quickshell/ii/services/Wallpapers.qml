@@ -46,6 +46,36 @@ Singleton {
         root.changed()
     }
 
+    function setDarkWallpaper(path, applyNow = Appearance.m3colors.darkmode) {
+        if (!path || path.length === 0) return;
+        Config.options.background.darkWallpaperPath = path;
+        if (applyNow) {
+            apply(path, true);
+        } else {
+            Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--dark-image", path]);
+        }
+        root.changed();
+    }
+
+    function setLightWallpaper(path, applyNow = !Appearance.m3colors.darkmode) {
+        if (!path || path.length === 0) return;
+        Config.options.background.lightWallpaperPath = path;
+        if (applyNow) {
+            apply(path, false);
+        } else {
+            Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--light-image", path]);
+        }
+        root.changed();
+    }
+
+    function setBothWallpapers(path) {
+        if (!path || path.length === 0) return;
+        Config.options.background.darkWallpaperPath = path;
+        Config.options.background.lightWallpaperPath = path;
+        apply(path, Appearance.m3colors.darkmode);
+        root.changed();
+    }
+
     Process {
         id: selectProc
         property string filePath: ""
@@ -176,6 +206,18 @@ Singleton {
 
         function apply(path: string): void {
             root.apply(path);
+        }
+
+        function setDark(path: string): void {
+            root.setDarkWallpaper(path);
+        }
+
+        function setLight(path: string): void {
+            root.setLightWallpaper(path);
+        }
+
+        function setBoth(path: string): void {
+            root.setBothWallpapers(path);
         }
     }
 }
