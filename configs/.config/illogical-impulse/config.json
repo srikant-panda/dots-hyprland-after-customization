@@ -70,7 +70,9 @@
     }
   },
   "background": {
+    "darkWallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Dark/Dessert-Dark.png",
     "hideWhenFullscreen": true,
+    "lightWallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Light/Dessert_light.png",
     "parallax": {
       "autoVertical": false,
       "enableSidebar": true,
@@ -80,9 +82,7 @@
       "workspaceZoom": 1.07
     },
     "thumbnailPath": "/home/srikant/.config/hypr/custom/scripts/mpvpaper_thumbnails/bg.mp4.jpg",
-    "wallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Light/Dessert_light.png",
-    "darkWallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Dark/Dessert-Dark.png",
-    "lightWallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Light/Dessert_light.png",
+    "wallpaperPath": "/home/srikant/Pictures/Wallpapers/Wallpapers/wallpapers/Dynamic-Wallpapers/Dark/Dessert-Dark.png",
     "widgets": {
       "clock": {
         "cookie": {
@@ -217,7 +217,7 @@
     "superKey": "",
     "useFnSymbol": false,
     "useMacSymbol": false,
-    "useMouseSymbol": false
+    "useMouseSymbol": true
   },
   "conflictKiller": {
     "autoKillNotificationDaemons": false,
@@ -355,7 +355,7 @@
     "targetRegions": {
       "content": true,
       "contentRegionOpacity": 0.8,
-      "layers": false,
+      "layers": true,
       "opacity": 0.3,
       "selectionPadding": 5,
       "showLabel": false,
@@ -536,7 +536,7 @@
     }
   },
   "wallpaperSelector": {
-    "useSystemFileDialog": false
+    "useSystemFileDialog": true
   },
   "windows": {
     "centerTitle": true,

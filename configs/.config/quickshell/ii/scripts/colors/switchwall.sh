@@ -215,6 +215,9 @@ EOF
 
 set_wallpaper_path() {
     local path="$1"
+    if [[ -z "$path" || -d "$path" || ! -f "$path" ]]; then
+        return 1
+    fi
     if [ -f "$SHELL_CONFIG_FILE" ]; then
         jq --arg path "$path" '.background.wallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
     fi
@@ -222,6 +225,9 @@ set_wallpaper_path() {
 
 set_dark_wallpaper_path() {
     local path="$1"
+    if [[ -z "$path" || -d "$path" || ! -f "$path" ]]; then
+        return 1
+    fi
     if [ -f "$SHELL_CONFIG_FILE" ]; then
         jq --arg path "$path" '.background.darkWallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
     fi
@@ -229,6 +235,9 @@ set_dark_wallpaper_path() {
 
 set_light_wallpaper_path() {
     local path="$1"
+    if [[ -z "$path" || -d "$path" || ! -f "$path" ]]; then
+        return 1
+    fi
     if [ -f "$SHELL_CONFIG_FILE" ]; then
         jq --arg path "$path" '.background.lightWallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
     fi
@@ -269,9 +278,9 @@ switch() {
         matugen_args+=(color hex "$color")
         generate_colors_material_args=(--color "$color")
     else
-        if [[ -z "$imgpath" ]]; then
-            echo 'Aborted'
-            exit 0
+        if [[ -z "$imgpath" || -d "$imgpath" || ! -f "$imgpath" ]]; then
+            echo "[switchwall.sh] Aborted: '$imgpath' is not a valid image file" >&2
+            exit 1
         fi
 
         if [[ "$noswitch_flag" != "1" ]]; then
@@ -490,12 +499,19 @@ main() {
                         eff_mode="light"
                     fi
                 fi
-                if [[ "$eff_mode" == "dark" && -n "$cfg_dark" && -f "$cfg_dark" ]]; then
+                if [[ "$eff_mode" == "dark" && -n "$cfg_dark" && -f "$cfg_dark" && ! -d "$cfg_dark" ]]; then
                     imgpath="$cfg_dark"
-                elif [[ "$eff_mode" == "light" && -n "$cfg_light" && -f "$cfg_light" ]]; then
+                elif [[ "$eff_mode" == "light" && -n "$cfg_light" && -f "$cfg_light" && ! -d "$cfg_light" ]]; then
                     imgpath="$cfg_light"
                 else
                     imgpath=$(jq -r '.background.wallpaperPath // empty' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "")
+                    if [[ -z "$imgpath" || -d "$imgpath" || ! -f "$imgpath" ]]; then
+                        if [[ -n "$cfg_dark" && -f "$cfg_dark" && ! -d "$cfg_dark" ]]; then
+                            imgpath="$cfg_dark"
+                        elif [[ -n "$cfg_light" && -f "$cfg_light" && ! -d "$cfg_light" ]]; then
+                            imgpath="$cfg_light"
+                        fi
+                    fi
                 fi
                 shift
                 ;;

@@ -46,34 +46,62 @@ Singleton {
         root.changed()
     }
 
+    Process {
+        id: setDarkProc
+        property string filePath: ""
+        property bool applyNow: false
+        function setDark(path, applyNow) {
+            setDarkProc.filePath = path;
+            setDarkProc.applyNow = applyNow;
+            setDarkProc.exec(["test", "-f", FileUtils.trimFileProtocol(path)]);
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) return;
+            Config.options.background.darkWallpaperPath = setDarkProc.filePath;
+            if (setDarkProc.applyNow) {
+                root.apply(setDarkProc.filePath, true);
+            } else {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--dark-image", setDarkProc.filePath]);
+            }
+            root.changed();
+        }
+    }
+
+    Process {
+        id: setLightProc
+        property string filePath: ""
+        property bool applyNow: false
+        function setLight(path, applyNow) {
+            setLightProc.filePath = path;
+            setLightProc.applyNow = applyNow;
+            setLightProc.exec(["test", "-f", FileUtils.trimFileProtocol(path)]);
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) return;
+            Config.options.background.lightWallpaperPath = setLightProc.filePath;
+            if (setLightProc.applyNow) {
+                root.apply(setLightProc.filePath, false);
+            } else {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--light-image", setLightProc.filePath]);
+            }
+            root.changed();
+        }
+    }
+
     function setDarkWallpaper(path, applyNow = Appearance.m3colors.darkmode) {
         if (!path || path.length === 0) return;
-        Config.options.background.darkWallpaperPath = path;
-        if (applyNow) {
-            apply(path, true);
-        } else {
-            Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--dark-image", path]);
-        }
-        root.changed();
+        setDarkProc.setDark(path, applyNow);
     }
 
     function setLightWallpaper(path, applyNow = !Appearance.m3colors.darkmode) {
         if (!path || path.length === 0) return;
-        Config.options.background.lightWallpaperPath = path;
-        if (applyNow) {
-            apply(path, false);
-        } else {
-            Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--light-image", path]);
-        }
-        root.changed();
+        setLightProc.setLight(path, applyNow);
     }
 
     function setBothWallpapers(path) {
         if (!path || path.length === 0) return;
-        Config.options.background.darkWallpaperPath = path;
-        Config.options.background.lightWallpaperPath = path;
-        apply(path, Appearance.m3colors.darkmode);
-        root.changed();
+        setDarkWallpaper(path, Appearance.m3colors.darkmode);
+        setLightWallpaper(path, !Appearance.m3colors.darkmode);
     }
 
     Process {

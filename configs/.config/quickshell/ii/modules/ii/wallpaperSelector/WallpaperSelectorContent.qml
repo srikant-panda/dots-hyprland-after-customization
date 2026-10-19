@@ -369,7 +369,7 @@ MouseArea {
                                                     id: darkActiveText
                                                     anchors.centerIn: parent
                                                     text: Translation.tr("SELECTING")
-                                                    font.pixelSize: Appearance.font.pixelSize.tiny
+                                                    font.pixelSize: Appearance.font.pixelSize.smallest
                                                     font.weight: Font.Bold
                                                     color: Appearance.colors.colOnPrimary
                                                 }
@@ -469,7 +469,7 @@ MouseArea {
                                                     id: lightActiveText
                                                     anchors.centerIn: parent
                                                     text: Translation.tr("SELECTING")
-                                                    font.pixelSize: Appearance.font.pixelSize.tiny
+                                                    font.pixelSize: Appearance.font.pixelSize.smallest
                                                     font.weight: Font.Bold
                                                     color: Appearance.colors.colOnTertiary
                                                 }
@@ -542,8 +542,13 @@ MouseArea {
                         }
 
                         function activateCurrent() {
+                            const isDir = grid.model.get(currentIndex, "fileIsDir");
                             const filePath = grid.model.get(currentIndex, "filePath");
-                            root.selectWallpaperPath(filePath);
+                            if (isDir) {
+                                Wallpapers.setDirectory(filePath);
+                            } else {
+                                root.selectWallpaperPath(filePath);
+                            }
                         }
 
                         model: Wallpapers.folderModel
@@ -555,14 +560,14 @@ MouseArea {
                             width: grid.cellWidth
                             height: grid.cellHeight
                             colBackground: (index === grid?.currentIndex || containsMouse) ? Appearance.colors.colPrimary :
-                                (GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.darkWallpaperPath) ? Appearance.colors.colSecondaryContainer :
-                                (GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.lightWallpaperPath) ? Appearance.colors.colTertiaryContainer :
-                                (fileModelData.filePath === Config.options.background.wallpaperPath) ? Appearance.colors.colSecondaryContainer :
+                                (!fileModelData.fileIsDir && GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.darkWallpaperPath) ? Appearance.colors.colSecondaryContainer :
+                                (!fileModelData.fileIsDir && GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.lightWallpaperPath) ? Appearance.colors.colTertiaryContainer :
+                                (!fileModelData.fileIsDir && fileModelData.filePath === Config.options.background.wallpaperPath) ? Appearance.colors.colSecondaryContainer :
                                 ColorUtils.transparentize(Appearance.colors.colPrimaryContainer)
                             colText: (index === grid.currentIndex || containsMouse) ? Appearance.colors.colOnPrimary :
-                                (GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.darkWallpaperPath) ? Appearance.colors.colOnSecondaryContainer :
-                                (GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.lightWallpaperPath) ? Appearance.colors.colOnTertiaryContainer :
-                                (fileModelData.filePath === Config.options.background.wallpaperPath) ? Appearance.colors.colOnSecondaryContainer :
+                                (!fileModelData.fileIsDir && GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.darkWallpaperPath) ? Appearance.colors.colOnSecondaryContainer :
+                                (!fileModelData.fileIsDir && GlobalStates.dualWallpaperSelectorMode && fileModelData.filePath === Config.options.background.lightWallpaperPath) ? Appearance.colors.colOnTertiaryContainer :
+                                (!fileModelData.fileIsDir && fileModelData.filePath === Config.options.background.wallpaperPath) ? Appearance.colors.colOnSecondaryContainer :
                                 Appearance.colors.colOnLayer0
 
                             onEntered: {
@@ -570,7 +575,11 @@ MouseArea {
                             }
 
                             onActivated: {
-                                root.selectWallpaperPath(fileModelData.filePath);
+                                if (fileModelData.fileIsDir) {
+                                    Wallpapers.setDirectory(fileModelData.filePath);
+                                } else {
+                                    root.selectWallpaperPath(fileModelData.filePath);
+                                }
                             }
 
                             onRightClicked: {
