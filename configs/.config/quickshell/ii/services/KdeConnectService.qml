@@ -62,6 +62,17 @@ Singleton {
         }
     }
 
+    function dismissAllNotifications(devId) {
+        const id = devId || root.deviceId;
+        if (!id) return;
+        Quickshell.execDetached([root.helperScript, "dismiss_all", id]);
+        if (root.primaryDevice) {
+            root.primaryDevice.notifications = [];
+            root.notifications = [];
+            root.notificationCount = 0;
+        }
+    }
+
     function shareFile(devId, filePath) {
         const id = devId || root.deviceId;
         if (!id) return;

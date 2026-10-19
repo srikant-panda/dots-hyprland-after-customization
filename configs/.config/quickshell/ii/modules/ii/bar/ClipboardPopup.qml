@@ -518,19 +518,32 @@ PopupWindow {
                             id: itemDelegate
                             required property var modelData
                             readonly property bool isImage: Cliphist.entryIsImage(itemDelegate.modelData)
+                            readonly property bool isMedia: Cliphist.entryIsMedia(itemDelegate.modelData)
                             readonly property string rawText: itemDelegate.modelData ? itemDelegate.modelData.replace(/^\d+\t/, "") : ""
                             property bool copiedFeedback: false
+                            property bool copiedPathFeedback: false
 
                             Timer {
                                 id: feedbackTimer
                                 interval: 1000
                                 repeat: false
-                                onTriggered: itemDelegate.copiedFeedback = false
+                                onTriggered: {
+                                    itemDelegate.copiedFeedback = false;
+                                    itemDelegate.copiedPathFeedback = false;
+                                }
                             }
 
                             function copyThis() {
                                 Cliphist.copy(itemDelegate.modelData);
                                 itemDelegate.copiedFeedback = true;
+                                itemDelegate.copiedPathFeedback = false;
+                                feedbackTimer.restart();
+                            }
+
+                            function copyFilePath() {
+                                Cliphist.copyPath(itemDelegate.modelData);
+                                itemDelegate.copiedFeedback = true;
+                                itemDelegate.copiedPathFeedback = true;
                                 feedbackTimer.restart();
                             }
 
@@ -627,17 +640,40 @@ PopupWindow {
                                     // Copied feedback label
                                     StyledText {
                                         visible: itemDelegate.copiedFeedback
-                                        text: "Copied to clipboard!"
+                                        text: itemDelegate.copiedPathFeedback ? "File path copied to clipboard!" : "Copied to clipboard!"
                                         font.pixelSize: 9
                                         font.bold: true
                                         color: Appearance.m3colors.m3primary
                                     }
                                 }
 
-                                // Action Buttons: Copy & Individual Delete
+                                // Action Buttons: Copy, Copy Path & Individual Delete
                                 RowLayout {
                                     Layout.alignment: Qt.AlignTop
                                     spacing: 2
+
+                                    // Copy Path button (images and media items)
+                                    RippleButton {
+                                        id: copyPathItemBtn
+                                        visible: itemDelegate.isMedia
+                                        implicitWidth: 24
+                                        implicitHeight: 24
+                                        buttonRadius: 12
+                                        colBackground: hovered ? Appearance.colors.colLayer2Hover : "transparent"
+
+                                        onPressed: itemDelegate.copyFilePath()
+
+                                        contentItem: MaterialSymbol {
+                                            anchors.centerIn: parent
+                                            text: itemDelegate.copiedPathFeedback ? "check" : "link"
+                                            iconSize: 14
+                                            color: itemDelegate.copiedPathFeedback ? Appearance.m3colors.m3primary : Appearance.m3colors.m3onSurfaceVariant
+                                        }
+
+                                        PopupToolTip {
+                                            text: "Copy file path"
+                                        }
+                                    }
 
                                     // Copy button
                                     RippleButton {
@@ -651,9 +687,9 @@ PopupWindow {
 
                                         contentItem: MaterialSymbol {
                                             anchors.centerIn: parent
-                                            text: itemDelegate.copiedFeedback ? "check" : "content_copy"
+                                            text: (itemDelegate.copiedFeedback && !itemDelegate.copiedPathFeedback) ? "check" : "content_copy"
                                             iconSize: 14
-                                            color: itemDelegate.copiedFeedback ? Appearance.m3colors.m3primary : Appearance.m3colors.m3onSurfaceVariant
+                                            color: (itemDelegate.copiedFeedback && !itemDelegate.copiedPathFeedback) ? Appearance.m3colors.m3primary : Appearance.m3colors.m3onSurfaceVariant
                                         }
 
                                         PopupToolTip {

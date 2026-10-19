@@ -76,6 +76,36 @@ Singleton {
         return !!(/^\d+\t\[\[.*binary data.*\d+x\d+.*\]\]$/.test(entry))
     }
 
+    function entryIsMedia(entry) {
+        if (!entry) return false;
+        if (entryIsImage(entry)) return true;
+        const raw = entry.replace(/^\d+\t/, "").trim();
+        const cleanPath = raw.replace(/^file:\/\//, "");
+        return /\.(png|jpe?g|gif|webp|svg|bmp|ico|mp4|mkv|webm|avi|mov|mp3|wav|ogg|flac|m4a|aac|opus)$/i.test(cleanPath);
+    }
+
+    function copyPath(entry) {
+        if (!entry) return;
+        if (entryIsImage(entry)) {
+            const entryNumberMatch = entry.match(/^(\d+)\t/);
+            const entryNumber = entryNumberMatch ? entryNumberMatch[1] : "0";
+            const extMatch = entry.match(/\b(png|jpe?g|gif|webp|bmp)\b/i);
+            const ext = extMatch ? extMatch[1].toLowerCase() : "png";
+            const outPath = `${Directories.cliphistDecode}/clip_${entryNumber}.${ext}`;
+            const decodeCmd = root.cliphistBinary.includes("cliphist")
+                ? `(printf '%s' '${StringUtils.shellSingleQuoteEscape(entry)}' | ${root.cliphistBinary} decode > '${outPath}' || ${root.cliphistBinary} decode ${entryNumber} > '${outPath}')`
+                : `${root.cliphistBinary} decode ${entryNumber} > '${outPath}'`;
+            const cmd = `mkdir -p '${Directories.cliphistDecode}' && ([ -s '${outPath}' ] || (${decodeCmd}; [ -s '${outPath}' ] || rm -f '${outPath}')) && printf '%s' '${outPath}' | wl-copy`;
+            Quickshell.execDetached(["bash", "-c", cmd]);
+            Quickshell.clipboardText = outPath;
+        } else {
+            const raw = entry.replace(/^\d+\t/, "").trim();
+            const cleanPath = raw.replace(/^file:\/\//, "");
+            Quickshell.execDetached(["bash", "-c", `printf '%s' '${StringUtils.shellSingleQuoteEscape(cleanPath)}' | wl-copy`]);
+            Quickshell.clipboardText = cleanPath;
+        }
+    }
+
     function refresh() {
         readProc.buffer = []
         readProc.running = true
@@ -200,6 +230,10 @@ Singleton {
 
         function togglePrivate(): void {
             root.togglePrivateMode()
+        }
+
+        function copyPath(entry: string): void {
+            root.copyPath(entry);
         }
     }
 }

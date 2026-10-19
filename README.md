@@ -307,6 +307,24 @@ bash ~/dots-customizations/apply-customizations.sh
   - **Grid Visual Indicators:** Grid items display badges indicating whether they are assigned as the Dark Mode wallpaper, Light Mode wallpaper, or both.
   - **Toolbar Controls:** Bottom toolbar features a Dual Mode toggle button (`split_scene`) and a confirm Done FAB button (`check`) to commit selections.
 
+### 24. KDE Connect "Clear All" Notifications & Clipboard File Path Copy
+- **Files:**
+  - `~/.config/quickshell/ii/scripts/kdeconnect/kdeconnect.py`
+  - `~/.config/quickshell/ii/services/KdeConnectService.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/KdeConnectPopup.qml`
+  - `~/.config/quickshell/ii/services/Cliphist.qml`
+  - `~/.config/quickshell/ii/modules/ii/bar/ClipboardPopup.qml`
+- **Features:**
+  - **KDE Connect "Clear All" Notifications Sweeper Button:**
+    - Added a "Clear All" button with a sweeper icon (`delete_sweep`) to the KDE Connect popup notifications header.
+    - Dismisses all active notifications remotely on the paired phone over DBus (`org.kde.kdeconnect.device.notifications`).
+    - Visible whenever notification count is greater than 0, with Material 3 hover styling and tooltip.
+  - **Clipboard Media & Image "Copy File Path" Action:**
+    - For images and media items in the clipboard history, added a dedicated "Copy File Path" button (`link` icon).
+    - Automatically decodes binary clipboard image data to a persistent file in `/tmp/quickshell/media/cliphist/` and copies the absolute file path to the Wayland clipboard (`wl-copy`).
+    - For copied media files or `file://` URIs, extracts and copies the clean filesystem path.
+    - Provides instant feedback ("File path copied to clipboard!") and icon checkmark state.
+
 ---
 
 

@@ -258,6 +258,20 @@ def dismiss_notif(dev_id, notif_id):
     except Exception as e:
         print(f"Error dismissing notification: {e}", file=sys.stderr)
 
+def dismiss_all_notifs(dev_id):
+    try:
+        notifs_path = f'/modules/kdeconnect/devices/{dev_id}/notifications'
+        notif_ids = subprocess.check_output(['qdbus6', 'org.kde.kdeconnect', notifs_path, 'org.kde.kdeconnect.device.notifications.activeNotifications'], stderr=subprocess.DEVNULL, timeout=1.0).decode().strip().splitlines()
+        for nid in notif_ids:
+            nid = nid.strip()
+            if not nid: continue
+            try:
+                subprocess.run(['qdbus6', 'org.kde.kdeconnect', f'{notifs_path}/{nid}', 'org.kde.kdeconnect.device.notifications.notification.dismiss'], check=False, timeout=1.0)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Error dismissing all notifications: {e}", file=sys.stderr)
+
 def share_file(dev_id, path=None):
     if not path:
         try:
@@ -359,6 +373,8 @@ if __name__ == "__main__":
         browse_device(sys.argv[2])
     elif sys.argv[1] == "dismiss" and len(sys.argv) >= 4:
         dismiss_notif(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == "dismiss_all" and len(sys.argv) >= 3:
+        dismiss_all_notifs(sys.argv[2])
     elif sys.argv[1] == "share" and len(sys.argv) >= 3:
         share_file(sys.argv[2], sys.argv[3] if len(sys.argv) >= 4 else None)
     elif sys.argv[1] == "clipboard" and len(sys.argv) >= 3:

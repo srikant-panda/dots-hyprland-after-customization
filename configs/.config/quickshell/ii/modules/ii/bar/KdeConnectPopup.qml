@@ -368,6 +368,33 @@ PopupWindow {
                         color: Appearance.m3colors.m3primary
                         font.bold: true
                     }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    // Clear All Notifications Button (Sweeper icon)
+                    RippleButton {
+                        id: clearAllNotifsBtn
+                        visible: KdeConnectService.notificationCount > 0
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        buttonRadius: 13
+                        colBackground: hovered ? Appearance.colors.colLayer1Hover : "transparent"
+
+                        onPressed: KdeConnectService.dismissAllNotifications()
+
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "delete_sweep"
+                            iconSize: 18
+                            color: clearAllNotifsBtn.hovered ? Appearance.m3colors.m3error : Appearance.m3colors.m3onSurfaceVariant
+                        }
+
+                        PopupToolTip {
+                            text: "Clear all notifications"
+                        }
+                    }
                 }
 
                 // Notifications List (Scrollable)
