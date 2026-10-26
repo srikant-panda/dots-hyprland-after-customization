@@ -16,7 +16,8 @@ Singleton {
     property string filePath: Directories.generatedMaterialThemePath
 
     property bool targetDark: Appearance.m3colors.darkmode
-    property bool isSwitching: false
+    property bool manualSwitchingLock: false
+    readonly property bool isSwitching: switchProc.running || stabilityCooldownTimer.running || manualSwitchingLock
 
     function reapplyTheme() {
         themeFileView.reload()
@@ -36,12 +37,11 @@ Singleton {
             }
             
             Appearance.m3colors.darkmode = (Appearance.m3colors.m3background.hslLightness < 0.5)
-            root.targetDark = Appearance.m3colors.darkmode
-            root.isSwitching = false
-            switchingSafetyTimeout.stop()
+            if (!root.isSwitching) {
+                root.targetDark = Appearance.m3colors.darkmode
+            }
         } catch (e) {
             console.error("[MaterialThemeLoader] Error applying colors:", e)
-            root.isSwitching = false
         }
     }
 
@@ -62,12 +62,27 @@ Singleton {
 
     Timer {
         id: switchingSafetyTimeout
-        interval: 3500
+        interval: 8000
         repeat: false
         running: false
         onTriggered: {
-            root.isSwitching = false
+            console.warn("[MaterialThemeLoader] Switching timed out; releasing lock")
+            switchProc.running = false
+            root.manualSwitchingLock = false
+            stabilityCooldownTimer.stop()
             root.targetDark = Appearance.m3colors.darkmode
+        }
+    }
+
+    Timer {
+        id: stabilityCooldownTimer
+        interval: 800
+        repeat: false
+        running: false
+        onTriggered: {
+            root.manualSwitchingLock = false
+            root.targetDark = Appearance.m3colors.darkmode
+            switchingSafetyTimeout.stop()
         }
     }
 
@@ -96,6 +111,22 @@ Singleton {
         onLoadFailed: root.resetFilePathNextTime();
     }
 
+    Process {
+        id: switchProc
+        command: [
+            Directories.wallpaperSwitchScriptPath,
+            "--mode", root.targetDark ? "dark" : "light",
+            "--noswitch"
+        ]
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) {
+                console.warn("[MaterialThemeLoader] switchwall.sh exited with code: " + exitCode)
+            }
+            stabilityCooldownTimer.restart()
+        }
+    }
+
     function toggleLightDark(forceDark) {
         if (root.isSwitching) {
             return;
@@ -103,14 +134,15 @@ Singleton {
 
         const nextDark = (forceDark !== undefined) ? forceDark : !root.targetDark;
         root.targetDark = nextDark;
-        root.isSwitching = true;
+        root.manualSwitchingLock = true;
         switchingSafetyTimeout.restart();
 
-        Quickshell.execDetached([
+        switchProc.command = [
             Directories.wallpaperSwitchScriptPath,
             "--mode", nextDark ? "dark" : "light",
             "--noswitch"
-        ]);
+        ];
+        switchProc.running = true;
     }
 
     GlobalShortcut {

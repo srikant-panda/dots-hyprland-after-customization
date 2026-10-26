@@ -40,8 +40,8 @@ if is_file_exists(HOME .. "/.config/hypr/monitors.lua") then
     require("monitors")
 end
 
--- Shell overrides --
-require("hyprland.shellOverrides.main")
-
 -- HyprMod managed settings
 require("hyprland-gui")
+
+-- Shell overrides --
+require("hyprland.shellOverrides.main")

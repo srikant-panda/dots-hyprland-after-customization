@@ -46,10 +46,7 @@ GroupButton {
     Behavior on baseHeight {
         animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
     }
-    opacity: 0
-    Component.onCompleted: {
-        opacity = 1
-    }
+    opacity: root.enabled ? 1.0 : 0.4
     Behavior on opacity {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
     }
@@ -69,6 +66,7 @@ GroupButton {
     property color colIcon: expandedSize ? ((root.toggled) ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer3) : colText
 
     onClicked: {
+        if (!root.enabled) return;
         if (root.expandedSize && root.altAction) root.altAction();
         else root.mainAction();
     }
@@ -86,7 +84,8 @@ GroupButton {
         // Icon
         MouseArea {
             id: iconMouseArea
-            hoverEnabled: true
+            enabled: root.enabled
+            hoverEnabled: root.enabled
             acceptedButtons: (root.expandedSize && root.altAction) ? Qt.LeftButton : Qt.NoButton
             Layout.alignment: Qt.AlignHCenter
             Layout.fillHeight: true
@@ -94,9 +93,11 @@ GroupButton {
             Layout.bottomMargin: root.verticalPadding
             implicitHeight: iconBackground.implicitHeight
             implicitWidth: iconBackground.implicitWidth
-            cursorShape: Qt.PointingHandCursor
+            cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
-            onClicked: root.mainAction()
+            onClicked: {
+                if (root.enabled) root.mainAction();
+            }
 
             Rectangle {
                 id: iconBackground

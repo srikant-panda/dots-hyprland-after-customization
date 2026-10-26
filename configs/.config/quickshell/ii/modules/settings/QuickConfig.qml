@@ -29,10 +29,13 @@ ContentPage {
         property color colText: toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer2
         padding: 5
         Layout.fillWidth: true
+        enabled: !MaterialThemeLoader.isSwitching
         toggled: MaterialThemeLoader.targetDark === dark
         colBackground: Appearance.colors.colLayer2
         onClicked: {
-            MaterialThemeLoader.toggleLightDark(dark);
+            if (!MaterialThemeLoader.isSwitching) {
+                MaterialThemeLoader.toggleLightDark(dark);
+            }
         }
         contentItem: Item {
             anchors.centerIn: parent

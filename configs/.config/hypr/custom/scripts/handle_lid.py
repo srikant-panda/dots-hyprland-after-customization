@@ -42,6 +42,46 @@ def log_and_print(msg: str):
     print(msg)
 
 
+def is_on_ac() -> bool:
+    """Check if the system is currently connected to AC mains power."""
+    try:
+        ps_path = "/sys/class/power_supply"
+        if os.path.exists(ps_path):
+            for dev in os.listdir(ps_path):
+                type_file = os.path.join(ps_path, dev, "type")
+                online_file = os.path.join(ps_path, dev, "online")
+                if os.path.exists(type_file) and os.path.exists(online_file):
+                    with open(type_file, "r") as tf:
+                        dev_type = tf.read().strip()
+                    if dev_type in ("Mains", "USB_C", "USB"):
+                        with open(online_file, "r") as of:
+                            if of.read().strip() == "1":
+                                return True
+    except Exception as e:
+        log_and_print(f"Error checking AC status: {e}")
+    return False
+
+
+def get_lid_power_action(on_ac: bool) -> str:
+    """Read configured lid close action for single integrated display from config.json."""
+    config_file = Path.home() / ".config/illogical-impulse/config.json"
+    power_cfg = {}
+    if config_file.exists():
+        try:
+            with open(config_file, "r") as f:
+                data = json.load(f)
+                power_cfg = data.get("power", {})
+        except Exception as e:
+            log_and_print(f"Error reading power config: {e}")
+
+    if on_ac:
+        # Normal power level (plugged into AC)
+        return power_cfg.get("lidActionAc", "lock")
+    else:
+        # Low power level (on battery)
+        return power_cfg.get("lidActionBattery", "suspend")
+
+
 def hypr_eval(code: str) -> str:
     """Execute Lua code in Hyprland via hyprctl repl."""
     try:
@@ -291,6 +331,25 @@ def apply_profile(lid_event: str | None = None):
 
             hypr_eval("\n".join(lua_commands))
 
+        elif not has_external and lid_state == "closed":
+            # -------------------------------------------------------------
+            # State E: Single display (integrated monitor only) with lid closed
+            # -------------------------------------------------------------
+            on_ac = is_on_ac()
+            power_level_name = "AC/Normal" if on_ac else "Battery/Low Power"
+            action = get_lid_power_action(on_ac).lower().strip()
+            log_and_print(f"Applying State E: Single display lid closed. Power level: {power_level_name}, Action: '{action}'")
+
+            if action == "suspend":
+                log_and_print("Executing system suspend...")
+                subprocess.Popen(["bash", "-c", "systemctl suspend || loginctl suspend"])
+            elif action == "lock":
+                log_and_print("Executing screen lock...")
+                subprocess.Popen(["loginctl", "lock-session"])
+                hypr_eval(f'hl.dispatch(hl.dsp.dpms({{ action = "disable" }}))')
+            else:
+                log_and_print("Lid action is 'nothing' or 'ignore'. Display and session remain active.")
+
         else:
             # -------------------------------------------------------------
             # State C: Laptop-only Mode (External disconnected or lid open without external)
@@ -298,6 +357,7 @@ def apply_profile(lid_event: str | None = None):
             log_and_print("Applying State C: Single display profile (Internal display enabled at 0x0)")
             lua_commands = [
                 f'hl.monitor({{ output = "{int_name}", disabled = false, mode = "{int_mode}", position = "0x0", scale = {int_scale}, mirror = "" }})',
+                f'hl.dispatch(hl.dsp.dpms({{ action = "enable" }}))',
                 f'hl.dispatch(hl.dsp.focus({{ monitor = "{int_name}" }}))',
             ]
             hypr_eval("\n".join(lua_commands))

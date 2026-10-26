@@ -107,7 +107,22 @@ Item {
             sourceComponent: CircleUtilButton {
                 id: darkLightBtn
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: event => MaterialThemeLoader.toggleLightDark()
+                enabled: !MaterialThemeLoader.isSwitching
+                opacity: MaterialThemeLoader.isSwitching ? 0.35 : 1.0
+                pointingHandCursor: !MaterialThemeLoader.isSwitching
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 250
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                onClicked: event => {
+                    if (!MaterialThemeLoader.isSwitching) {
+                        MaterialThemeLoader.toggleLightDark()
+                    }
+                }
 
                 Item {
                     id: iconContainer
@@ -172,9 +187,18 @@ Item {
                         anchors.centerIn: parent
                         horizontalAlignment: Qt.AlignHCenter
                         fill: 0
-                        text: iconContainer.displayDark ? "light_mode" : "dark_mode"
+                        text: MaterialThemeLoader.isSwitching ? "sync" : (iconContainer.displayDark ? "light_mode" : "dark_mode")
                         iconSize: Appearance.font.pixelSize.large
-                        color: Appearance.colors.colOnLayer2
+                        color: MaterialThemeLoader.isSwitching ? Appearance.colors.colSubtext : Appearance.colors.colOnLayer2
+
+                        rotation: 0
+                        NumberAnimation on rotation {
+                            running: MaterialThemeLoader.isSwitching
+                            from: 0
+                            to: 360
+                            duration: 1000
+                            loops: Animation.Infinite
+                        }
 
                         Behavior on color {
                             ColorAnimation {

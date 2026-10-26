@@ -226,6 +226,7 @@ Singleton {
             }
 
             property JsonObject bar: JsonObject {
+                property int height: 40
                 property JsonObject autoHide: JsonObject {
                     property bool enable: false
                     property int hoverRegionWidth: 2
@@ -295,6 +296,13 @@ Singleton {
                 property int full: 101
                 property bool automaticSuspend: true
                 property int suspend: 3
+            }
+
+            property JsonObject power: JsonObject {
+                property string lidActionAc: "nothing"
+                property string lidActionBattery: "suspend"
+                property int lockTimeout: 300
+                property int sleepTimeout: 900
             }
 
             property JsonObject calendar: JsonObject {

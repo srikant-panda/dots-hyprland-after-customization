@@ -62,5 +62,32 @@ StyledPopup {
                 }
             }
         }
+
+        RippleButton {
+            Layout.fillWidth: true
+            Layout.topMargin: 4
+            implicitHeight: 28
+            buttonRadius: Appearance.rounding.small
+            onClicked: {
+                Quickshell.execDetached([
+                    "bash", "-c",
+                    "qs ipc -p ~/.config/quickshell/ii/settings.qml call settings openPage power 2>/dev/null || (export QS_SETTINGS_PAGE=power; qs -p ~/.config/quickshell/ii/settings.qml &)"
+                ]);
+            }
+            contentItem: RowLayout {
+                anchors.centerIn: parent
+                spacing: 6
+                MaterialSymbol {
+                    text: "settings"
+                    iconSize: 15
+                    color: Appearance.colors.colOnSecondaryContainer
+                }
+                StyledText {
+                    text: Translation.tr("Power Settings")
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: Appearance.colors.colOnSecondaryContainer
+                }
+            }
+        }
     }
 }

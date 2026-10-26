@@ -16,6 +16,10 @@ if [[ $is_editor_term -eq 1 ]]; then
   unset GLAMOUR_STYLE
 fi
 
+# Ensure ~/.local/bin is in PATH for all bash sessions
+[[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && PATH="$HOME/.local/bin:$PATH"
+export PATH
+
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
@@ -34,6 +38,7 @@ fi
 
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
+[ -x "$HOME/.local/bin/vlc" ] && alias vlc="$HOME/.local/bin/vlc"
 PS1='[\u@\h \W]\$ '
 
 export NVM_DIR="$HOME/.nvm"

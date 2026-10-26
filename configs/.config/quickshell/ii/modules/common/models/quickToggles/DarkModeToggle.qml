@@ -8,14 +8,17 @@ import qs.modules.common.widgets
 
 QuickToggleModel {
     name: Translation.tr("Dark Mode")
-    statusText: MaterialThemeLoader.targetDark ? Translation.tr("Dark") : Translation.tr("Light")
+    available: !MaterialThemeLoader.isSwitching
+    statusText: MaterialThemeLoader.isSwitching ? Translation.tr("Switching...") : (MaterialThemeLoader.targetDark ? Translation.tr("Dark") : Translation.tr("Light"))
 
     toggled: MaterialThemeLoader.targetDark
-    icon: MaterialThemeLoader.targetDark ? "dark_mode" : "light_mode"
+    icon: MaterialThemeLoader.isSwitching ? "sync" : (MaterialThemeLoader.targetDark ? "dark_mode" : "light_mode")
     
     mainAction: () => {
-        MaterialThemeLoader.toggleLightDark();
+        if (!MaterialThemeLoader.isSwitching) {
+            MaterialThemeLoader.toggleLightDark();
+        }
     }
 
-    tooltipText: Translation.tr("Dark Mode")
+    tooltipText: MaterialThemeLoader.isSwitching ? Translation.tr("Switching theme...") : Translation.tr("Dark Mode")
 }

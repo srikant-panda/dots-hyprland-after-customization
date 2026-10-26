@@ -14,10 +14,13 @@ RippleButton {
     property color previewFg: dark ? Qt.lighter(previewBg, 2.2) : ColorUtils.mix(previewBg, "#292929", 0.85)
     padding: 5
     Layout.fillWidth: true
+    enabled: !MaterialThemeLoader.isSwitching
     colBackground: Appearance.colors.colLayer2
     toggled: MaterialThemeLoader.targetDark === dark
     onClicked: {
-        MaterialThemeLoader.toggleLightDark(dark)
+        if (!MaterialThemeLoader.isSwitching) {
+            MaterialThemeLoader.toggleLightDark(dark);
+        }
     }
     contentItem: Item {
         anchors.centerIn: parent

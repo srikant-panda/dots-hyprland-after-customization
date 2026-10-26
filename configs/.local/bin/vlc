@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# vlc wrapper
+# ------------------------------------------------------------------------------
+# 1. Enforces QT_QPA_PLATFORMTHEME=xdgdesktopportal so Qt5 VLC uses the native
+#    XDG Desktop Portal file chooser under Hyprland.
+# 2. Dynamically detects OS Dark/Light mode from gsettings / GTK 3 config and
+#    applies --qt-dark-palette or --no-qt-dark-palette so VLC follows OS theming.
+# ==============================================================================
+
+export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+
+# Check if OS is currently in Dark Mode
+is_dark=0
+if command -v gsettings >/dev/null 2>&1; then
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    if [ "$scheme" = "prefer-dark" ]; then
+        is_dark=1
+    fi
+fi
+if [ "$is_dark" -eq 0 ] && [ -f "$HOME/.config/gtk-3.0/settings.ini" ]; then
+    if grep -q "gtk-application-prefer-dark-theme=1" "$HOME/.config/gtk-3.0/settings.ini" 2>/dev/null; then
+        is_dark=1
+    fi
+fi
+
+# Pass appropriate palette flag to VLC
+if [ "$is_dark" -eq 1 ]; then
+    exec /usr/bin/vlc --qt-dark-palette "$@"
+else
+    exec /usr/bin/vlc --no-qt-dark-palette "$@"
+fi

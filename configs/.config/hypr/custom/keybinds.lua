@@ -38,6 +38,12 @@ hl.define_submap("alttab", function()
     hl.bind("Right", hl.dsp.global("quickshell:altTabNext"), { ignore_mods = true })
     hl.bind("Left", hl.dsp.global("quickshell:altTabPrev"), { ignore_mods = true })
 
+    -- Close selected window with Delete key
+    hl.bind("Delete", hl.dsp.global("quickshell:altTabClose"), { ignore_mods = true })
+    hl.bind("ALT + Delete", hl.dsp.global("quickshell:altTabClose"))
+    hl.bind("SUPER + Delete", hl.dsp.global("quickshell:altTabClose"))
+    hl.bind("BackSpace", hl.dsp.global("quickshell:altTabClose"), { ignore_mods = true })
+
     -- Enter commits, Escape cancels
     hl.bind("Return", hl.dsp.global("quickshell:altTabCommit"), { ignore_mods = true })
     hl.bind("Return", hl.dsp.submap("reset"), { ignore_mods = true })

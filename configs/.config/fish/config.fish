@@ -52,6 +52,13 @@ if status is-interactive
     alias claer "printf '\033[2J\033[3J\033[1;1H'"
     alias pamcan pacman
     alias q 'qs -c ii'
+    function vlc --wraps vlc --description 'Launch VLC with xdgdesktopportal'
+        if test -x ~/.local/bin/vlc
+            ~/.local/bin/vlc $argv
+        else
+            command vlc $argv
+        end
+    end
     if test "$TERM" != "linux"
         alias ls 'eza --icons=auto'
     end
@@ -59,6 +66,8 @@ if status is-interactive
         alias ssh 'kitten ssh'
     end
 end
+
+fish_add_path -g ~/.local/bin
 
 eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)
 

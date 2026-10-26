@@ -18,10 +18,13 @@ bash ~/dots-customizations/apply-customizations.sh
 
 ### What the restore script does automatically:
 1. **Creates a timestamped safety backup** of your existing configurations in `~/ii-backups/` before touching anything.
-2. **Applies all custom configuration files** to `~/.config/`.
-3. **Ensures `~/Pictures/Screenshots` directory exists**.
-4. **Verifies and installs HyprMod fixes** (`pycairo` support and the vertical monitor preview snapping bug fix).
-5. **Reloads Hyprland and restarts Quickshell** seamlessly.
+2. **Granular Dependency Verification & Smart Skips:** Automatically detects whether optional applications (like VLC, mpvpaper, swappy) exist on the machine. If missing, it safely skips creating orphaned wrappers and desktop entries without breaking any dependencies.
+3. **Interactive Resolution for Core Prerequisites:** If a critical dependency (e.g. `python3`) is missing, prompts with interactive choices: **[r] Retry**, **[i] Ignore**, or **[b] Revert** (rolls back the backup and exits).
+4. **Applies all custom configuration files** to `~/.config/`, `~/.local/bin/`, and `~/.local/share/applications/`.
+5. **Ensures `~/Pictures/Screenshots` directory exists**.
+6. **Verifies and installs HyprMod fixes** (`pycairo` support, monitor unmirror fix, and vertical monitor snapping).
+7. **Reloads Hyprland and restarts Quickshell** seamlessly.
+8. **Outputs a formatted Deployment Status Report Table** detailing what was applied, what was skipped, and the exact reasons.
 
 ---
 
@@ -325,6 +328,18 @@ bash ~/dots-customizations/apply-customizations.sh
     - For copied media files or `file://` URIs, extracts and copies the clean filesystem path.
     - Provides instant feedback ("File path copied to clipboard!") and icon checkmark state.
 
+### 25. VLC Native Portal File Chooser & OS Theme Synchronization (Dark/Light Follower)
+- **Files:**
+  - `~/.local/bin/vlc`
+  - `~/.local/share/applications/vlc*.desktop`
+  - `~/.config/hypr/custom/env.lua`
+  - `~/.bashrc`
+  - `~/.config/fish/config.fish`
+- **Features:**
+  - **Native Portal File Chooser:** Fixes Qt5 VLC on Arch Linux under Hyprland where `QT_QPA_PLATFORMTHEME=kde` broke file dialogs because Plasma 5 integration is removed from Arch. Forces `QT_QPA_PLATFORMTHEME=xdgdesktopportal` specifically for VLC, delegating open/save file pickers to the native GTK portal without degrading Qt6 KDE applications (Dolphin/Ark).
+  - **Dynamic OS Theme Following (Dark & Light Mode):** Dynamic wrapper detects current desktop color scheme preference (`gsettings get org.gnome.desktop.interface color-scheme` & `gtk-application-prefer-dark-theme`). Automatically supplies `--qt-dark-palette` in Dark Mode and `--no-qt-dark-palette` in Light Mode, allowing VLC's window controls, menus, playlist, and toolbars to match the OS theme seamlessly.
+  - **Smart Dependency Guard:** `apply-customizations.sh` checks for `vlc` before installing wrappers or desktop entries. If VLC is not installed on a new system, this component is cleanly skipped with no orphaned files or confusion.
+
 ---
 
 
@@ -349,8 +364,16 @@ dots-customizations/
 │   │   ├── satty/                 # Satty config
 │   │   ├── swappy/                # Swappy config
 │   │   └── xsettingsd/            # Xsettingsd conf
+│   ├── .local/
+│   │   ├── bin/
+│   │   │   └── vlc                # Dynamic VLC portal & dark/light theme wrapper
+│   │   └── share/applications/
+│   │       └── vlc*.desktop       # VLC desktop entry overrides
+│   ├── hyprland_monitors/
+│   │   └── monitors.py            # Unmirror fix
 │   └── hyprmod/
-│       └── monitor_preview.py      # HyprMod python bug fix
+│       ├── cursor.py              # Live GTK/XDG cursor syncing fix
+│       └── monitor_preview.py     # HyprMod vertical snapping bug fix
 ├── patches/                        # Unified diffs against upstream
 │   ├── hyprland.patch
 │   └── quickshell.patch
